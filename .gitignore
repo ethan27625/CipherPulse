@@ -1,0 +1,49 @@
+# ── Secrets ──────────────────────────────────────────────────────────────────
+.env
+config/token.json
+config/tiktok_token.json
+config/instagram_token.json
+config/client_secret.json
+
+# ── Generated output (large MP4/PNG files, not committed) ────────────────────
+output/
+
+# ── Cached stock footage (re-downloaded as needed) ───────────────────────────
+assets/footage_cache/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+pip-wheel-metadata/
+*.whl
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── IDE / OS ─────────────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+*.dockerignore

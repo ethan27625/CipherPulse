@@ -1,0 +1,116 @@
+name: Generate Shorts
+
+# Runs 3x daily: 8AM, 2PM, 8PM EST (13:00, 19:00, 01:00 UTC)
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 8AM EST
+    - cron: "0 19 * * *"   # 2PM EST
+    - cron: "0 1  * * *"   # 8PM EST
+  workflow_dispatch:        # allow manual trigger from Actions UI
+    inputs:
+      count:
+        description: "Number of Shorts to generate"
+        required: false
+        default: "1"
+      dry_run:
+        description: "Dry run (skip real uploads)"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python setup ───────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # ── 3. System dependencies ────────────────────────────────────────────────
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg \
+            libass9 \
+            fonts-liberation
+
+      # ── 4. Python dependencies ────────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      # ── 5. Restore OAuth tokens ───────────────────────────────────────────────
+      # Tokens are stored as base64-encoded secrets so they survive across runs.
+      # On first run: generate tokens locally, then base64-encode and add to secrets.
+      - name: Restore OAuth tokens
+        run: |
+          mkdir -p config
+          if [ -n "${{ secrets.YOUTUBE_TOKEN_B64 }}" ]; then
+            echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > config/token.json
+            echo "YouTube token restored"
+          fi
+          if [ -n "${{ secrets.TIKTOK_TOKEN_B64 }}" ]; then
+            echo "${{ secrets.TIKTOK_TOKEN_B64 }}" | base64 -d > config/tiktok_token.json
+            echo "TikTok token restored"
+          fi
+          if [ -n "${{ secrets.INSTAGRAM_TOKEN_B64 }}" ]; then
+            echo "${{ secrets.INSTAGRAM_TOKEN_B64 }}" | base64 -d > config/instagram_token.json
+            echo "Instagram token restored"
+          fi
+
+      # ── 6. Restore schedule queue ─────────────────────────────────────────────
+      - name: Restore schedule queue
+        if: ${{ secrets.SCHEDULE_QUEUE_B64 != '' }}
+        run: |
+          echo "${{ secrets.SCHEDULE_QUEUE_B64 }}" | base64 -d > config/schedule_queue.json
+
+      # ── 7. Run pipeline ───────────────────────────────────────────────────────
+      - name: Run CipherPulse pipeline
+        env:
+          ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
+          PEXELS_API_KEY:       ${{ secrets.PEXELS_API_KEY }}
+          YOUTUBE_CLIENT_ID:    ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          TIKTOK_CLIENT_KEY:    ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+        run: |
+          COUNT="${{ github.event.inputs.count || '1' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+          ARGS="--count $COUNT"
+          if [ "$DRY_RUN" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python3 -m src.orchestrator $ARGS
+
+      # ── 8. Upload video artifacts ─────────────────────────────────────────────
+      - name: Upload generated Shorts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cipherpulse-shorts-${{ github.run_number }}
+          path: |
+            output/*/video.mp4
+            output/*/thumbnail.png
+            output/*/script.txt
+            output/*/metadata.json
+          retention-days: 7
+
+      # ── 9. Upload run log ─────────────────────────────────────────────────────
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-log-${{ github.run_number }}
+          path: output/run_log.json
+          retention-days: 30

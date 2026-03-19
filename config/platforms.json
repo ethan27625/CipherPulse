@@ -1,0 +1,20 @@
+{
+  "youtube": {
+    "enabled": true,
+    "schedule_times": ["08:00", "14:00", "20:00"],
+    "timezone": "America/New_York",
+    "notes": "OAuth2 token stored at config/token.json (gitignored)"
+  },
+  "tiktok": {
+    "enabled": false,
+    "schedule_times": ["09:00", "15:00", "21:00"],
+    "timezone": "America/New_York",
+    "notes": "Enable after TikTok Developer approval. No native scheduled publishing — queue used instead."
+  },
+  "instagram": {
+    "enabled": false,
+    "schedule_times": ["09:30", "15:30", "21:30"],
+    "timezone": "America/New_York",
+    "notes": "Enable after Facebook Developer app approval. Requires public URL via file_hoster.py."
+  }
+}

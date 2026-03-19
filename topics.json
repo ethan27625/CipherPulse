@@ -1,0 +1,3502 @@
+[
+  {
+    "id": 1,
+    "topic": "The Equifax Breach: 147 Million Americans Exposed in 2017",
+    "format": 1,
+    "used": true,
+    "date_used": "2026-03-19"
+  },
+  {
+    "id": 2,
+    "topic": "SolarWinds Supply Chain Attack: How Russia Hacked the US Government",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 3,
+    "topic": "Colonial Pipeline Ransomware: How Hackers Shut Down US Fuel Supply",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 4,
+    "topic": "WannaCry: The Ransomware That Infected 200,000 Computers in 150 Countries",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 5,
+    "topic": "Stuxnet: The World's First Cyberweapon That Destroyed Physical Machines",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 6,
+    "topic": "The Yahoo Breach: 3 Billion Accounts Stolen and Hidden for Years",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 7,
+    "topic": "Target 2013: How Hackers Stole 40 Million Credit Cards Through an HVAC Vendor",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 8,
+    "topic": "MOVEit: The Zero-Day That Hit 2,500 Organizations in Weeks",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 9,
+    "topic": "LastPass Breach: Your Encrypted Password Vault Was Stolen",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 10,
+    "topic": "The Twitter Bitcoin Scam: How 17-Year-Olds Hacked Obama, Biden, and Musk",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 11,
+    "topic": "Marriott Breach: 500 Million Guest Records Exposed for 4 Years Undetected",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 12,
+    "topic": "The JPMorgan Hack: How Hackers Stole 76 Million Customer Records",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 13,
+    "topic": "NotPetya: The $10 Billion Cyberattack Disguised as Ransomware",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 14,
+    "topic": "Uber's Cover-Up: Paying Hackers $100K to Delete Stolen Data and Stay Quiet",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 15,
+    "topic": "The Sony Pictures Hack: North Korea's Hollywood Takedown",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 16,
+    "topic": "T-Mobile's Fifth Breach in 5 Years: Chronic Negligence or Systemic Failure?",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 17,
+    "topic": "Change Healthcare Attack: Why One Hack Broke US Medical Payments",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 18,
+    "topic": "MGM Resorts: Hackers Used a 10-Minute Phone Call to Take Down $100M in Systems",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 19,
+    "topic": "Caesars Entertainment: Paid $15M Ransom While MGM Refused",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 20,
+    "topic": "The Home Depot Breach: 56 Million Cards Stolen via Contractor Credentials",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 21,
+    "topic": "NSA's Shadow Brokers: When the Most Powerful Hacking Tools Were Leaked Online",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 22,
+    "topic": "Operation Aurora: China Hacked Google, Adobe, and 30 Other Tech Companies",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 23,
+    "topic": "Ashley Madison Hack: 37 Million Cheaters Exposed and the Suicides That Followed",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 24,
+    "topic": "The Bangladesh Bank Heist: $81M Stolen via SWIFT Banking System",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 25,
+    "topic": "Kaseya VSA: One Hack That Infected 1,500 Businesses Through IT Software",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 26,
+    "topic": "REvil Ransomware Gang: How the FBI Secretly Infiltrated Them",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 27,
+    "topic": "The OPM Breach: China Stole Personnel Files of 22 Million US Federal Employees",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 28,
+    "topic": "Adobe 2013: 153 Million User Records \u2014 and the Passwords Were Encrypted Wrong",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 29,
+    "topic": "LinkedIn 2012: 117 Million Passwords Cracked and Sold 4 Years Later",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 30,
+    "topic": "The PlayStation Network Breach: 77 Million Accounts and 23 Days of Downtime",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 31,
+    "topic": "Heartbleed: The SSL Bug That Left Half the Internet Vulnerable for 2 Years",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 32,
+    "topic": "Shellshock: The 25-Year-Old Bash Bug That Gave Attackers Full Control",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 33,
+    "topic": "Log4Shell: One Line of Java Code That Broke the Internet in 2021",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 34,
+    "topic": "The Twitch Leak: All Source Code, Streamer Earnings, and Internal Data Exposed",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 35,
+    "topic": "GoDaddy's Triple Breach: Same Company, Same Attacker, Three Separate Times",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 36,
+    "topic": "The Capital One Breach: Ex-AWS Engineer Exploited SSRF to Steal 100M Records",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 37,
+    "topic": "Verkada Camera Hack: 150,000 Security Cameras at Tesla, Jails, Hospitals Exposed",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 38,
+    "topic": "The SIM Swap Epidemic: How Criminals Steal Your Phone Number to Drain Accounts",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 39,
+    "topic": "Lazarus Group: North Korea's State-Sponsored Hacking Team That Funds the Regime",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 40,
+    "topic": "Anonymous vs. HBGary Federal: The Day Hacktivists Destroyed a Security Firm",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 41,
+    "topic": "The iCloud Celebgate: How 'The Fappening' Exploited Weak Apple Security",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 42,
+    "topic": "Mt. Gox: The $450M Bitcoin Exchange Collapse That Almost Killed Crypto",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 43,
+    "topic": "Poly Network DeFi Hack: $611M Stolen \u2014 Then the Hacker Returned It All",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 44,
+    "topic": "The Ronin Bridge Hack: North Korea Stole $625M in Crypto in One Transaction",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 45,
+    "topic": "Wormable BlueKeep: Microsoft's Nightmare Vulnerability Affecting All Old Windows",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 46,
+    "topic": "The 2020 US Election Infrastructure Attacks: What Really Happened",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 47,
+    "topic": "JBS Meatpacking Ransomware: How Hackers Disrupted the US Food Supply",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 48,
+    "topic": "CNA Financial: $40M Ransom Paid to Ransomware Gang \u2014 Largest Known Payment",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 49,
+    "topic": "The SolarWinds Hack Timeline: 9 Months Undetected in 18,000 Networks",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 50,
+    "topic": "Lapsus$: The Teenage Hacking Gang That Breached Microsoft, Nvidia, and Samsung",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 51,
+    "topic": "How Hackers Took Down Dyn DNS and Killed Twitter, Netflix, and Reddit for a Day",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 52,
+    "topic": "The Water Treatment Plant Hack: Hacker Tried to Poison Oldsmar, Florida's Water",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 53,
+    "topic": "Hafnium: China Exploited Microsoft Exchange to Hack 250,000 Servers in 30 Days",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 54,
+    "topic": "The Medibank Breach: Australia's Largest Health Insurer Exposed 9.7M Patient Records",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 55,
+    "topic": "Reddit Phishing Attack 2023: Two-Factor Wasn't Enough",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 56,
+    "topic": "The Okta Breach: A Support Ticket Gave Hackers Access to 134 Customer Environments",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 57,
+    "topic": "ALPHV BlackCat Ransomware: The FBI Disrupted Them \u2014 Then They Came Back",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 58,
+    "topic": "Cl0p Ransomware: How One Gang Exploited GoAnywhere, MOVEit, and More in One Year",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 59,
+    "topic": "The Air India Breach: 4.5 Million Passenger Records Including Passport Data Stolen",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 60,
+    "topic": "Robinhood 2021: 5 Million Emails Stolen via Customer Support Social Engineering",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 61,
+    "topic": "The Worm That Ate Iran: Stuxnet's Full Story from Discovery to Attribution",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 62,
+    "topic": "Hackers Shut Down a US Hospital \u2014 and a Patient Died",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 63,
+    "topic": "The Code Spaces Attack: Hackers Deleted Everything and a Company Ceased to Exist",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 64,
+    "topic": "2014 Snapchat Leak: 4.6 Million Usernames and Phone Numbers \u2014 by Security Researchers",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 65,
+    "topic": "How The Mirai Botnet Was Built by Three College Students for Minecraft",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 66,
+    "topic": "Pegasus Spyware: How NSO Group Hacked Activists, Journalists, and World Leaders",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 67,
+    "topic": "The Ticketmaster Breach 2024: ShinyHunters Stole 560 Million Customer Records",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 68,
+    "topic": "AT&T Data Breach 2024: Call and Text Records of Nearly All Customers Exposed",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 69,
+    "topic": "The Delta Air Lines Hack: CrowdStrike Update Caused the Largest IT Outage in History",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 70,
+    "topic": "Salt Typhoon: China's Hackers Inside US Telecom Networks for Over a Year",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 71,
+    "topic": "The PowerSchool Breach: 62 Million Student Records Stolen from a Single Platform",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 72,
+    "topic": "This AI Can Clone Your Voice From a 3-Second Clip",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 73,
+    "topic": "GPT-4 Can Write Malware Better Than Most Hackers",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 74,
+    "topic": "This AI Deepfake Tool Costs $0 and Runs on Your Laptop",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 75,
+    "topic": "AI-Powered Phishing Emails Are Now Indistinguishable From Real Ones",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 76,
+    "topic": "This AI Can Guess Your Password by Listening to You Type",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 77,
+    "topic": "Meta's AI Can Read Your Brainwaves and Reconstruct What You're Hearing",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 78,
+    "topic": "AI Can Now Detect Lies Better Than Humans \u2014 Here's What That Means",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 79,
+    "topic": "This AI Generates Realistic Fake IDs That Pass Document Verification",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 80,
+    "topic": "Google's AI Can Predict Where You'll Be Tomorrow Based on Your Data",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 81,
+    "topic": "AI-Generated Faces Are Now More 'Human' Than Real Photos",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 82,
+    "topic": "This AI Can Crack Any CAPTCHA in Under 1 Second",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 83,
+    "topic": "OpenAI's o1 Attempted to Prevent Itself from Being Shut Down",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 84,
+    "topic": "AI Worms Can Now Spread Between AI Agents Without Human Interaction",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 85,
+    "topic": "This AI Can Reconstruct Text You Deleted From Screen Reflections",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 86,
+    "topic": "China's AI Can Identify You in a Crowd Even When You're Masked",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 87,
+    "topic": "AI Is Now Writing Zero-Day Exploits \u2014 And Selling Them",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 88,
+    "topic": "This AI Reads Emotions in Real Time \u2014 and Governments Are Buying It",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 89,
+    "topic": "Deepfake CEO Video Calls Are Being Used to Steal Millions From Companies",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 90,
+    "topic": "AI Can Now Jailbreak Itself Without Human Prompting",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 91,
+    "topic": "This AI Predicts Your Health Conditions From a 30-Second Voice Sample",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 92,
+    "topic": "Google DeepMind's AI Discovered New Cyberattack Techniques on Its Own",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 93,
+    "topic": "AI-Generated Synthetic Identities Are Opening Real Bank Accounts",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 94,
+    "topic": "This AI Can Social Engineer Humans Better Than Trained Con Artists",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 95,
+    "topic": "The AI That Can Identify You From Your Typing Rhythm Alone",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 96,
+    "topic": "Autonomous AI Agents Are Completing Cyberattacks End-to-End Without Humans",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 97,
+    "topic": "This AI Tool Can Generate a Convincing Phishing Site in Under 30 Seconds",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 98,
+    "topic": "AI Is Now Being Used to Automate Business Email Compromise at Scale",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 99,
+    "topic": "An AI System Discovered a Major Vulnerability in Linux \u2014 Before Any Human Did",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 100,
+    "topic": "This AI Can Generate Working Exploits From CVE Descriptions Alone",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 101,
+    "topic": "ChatGPT Can Be Tricked Into Providing Dangerous Information 97% of the Time",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 102,
+    "topic": "AI-Generated OSINT: Bots Can Now Build a Full Profile on You in Minutes",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 103,
+    "topic": "This AI Detects Hidden Malware Invisible to Traditional Antivirus",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 104,
+    "topic": "Anthropic's Research Shows Claude Will Lie to Preserve Itself",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 105,
+    "topic": "AI Is Automating the Job of Penetration Testers \u2014 and It's Better at It",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 106,
+    "topic": "This AI Tool Can Impersonate Any Person's Writing Style Perfectly",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 107,
+    "topic": "You Think VPNs Make You Anonymous Online? Here's the Truth",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 108,
+    "topic": "You Think Strong Passwords Keep You Safe? Password Managers Can Be Hacked Too",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 109,
+    "topic": "You Think Private Browsing Hides Your Activity? It Doesn't Do What You Think",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 110,
+    "topic": "You Think Antivirus Software Stops Hackers? Modern Attackers Bypass It Easily",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 111,
+    "topic": "You Think Only Windows Gets Viruses? Macs Get Hacked More Than You Know",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 112,
+    "topic": "You Think 2FA Is Unbreakable? SIM Swapping and SS7 Attacks Bypass It Instantly",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 113,
+    "topic": "You Think Hackers Only Target Big Companies? Small Businesses Are Easier Prey",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 114,
+    "topic": "You Think Deleting Files Removes Them? Here's What Actually Happens",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 115,
+    "topic": "You Think Your Smart TV Isn't Spying on You? Think Again",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 116,
+    "topic": "You Think HTTPS Means a Website Is Safe? That's a Dangerous Myth",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 117,
+    "topic": "You Think Turning Off Location Stops Google Tracking You? Wrong",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 118,
+    "topic": "You Think Airplane Mode Makes Your Phone Untraceable? Not Quite",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 119,
+    "topic": "You Think Encryption Protects Your iCloud Backup? Apple Has the Key",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 120,
+    "topic": "You Think Public WiFi Is Safe If You Use HTTPS? Here's the Full Story",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 121,
+    "topic": "You Think AI-Generated Content Is Easy to Detect? Detection Tools Are Failing",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 122,
+    "topic": "You Think Your Password Was Never Leaked? Check HaveIBeenPwned First",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 123,
+    "topic": "You Think Cybercriminals Are Sophisticated Geniuses? Most Attacks Are Embarrassingly Simple",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 124,
+    "topic": "You Think the Dark Web Is Only for Criminals? Here's What's Really There",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 125,
+    "topic": "You Think Biometric Auth Is More Secure Than Passwords? Not Always",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 126,
+    "topic": "You Think Covering Your Webcam Is Paranoid? Here's Why Zuckerberg Does It",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 127,
+    "topic": "How Phishing Attacks Actually Work \u2014 In 60 Seconds",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 128,
+    "topic": "How Ransomware Encrypts Your Files and Holds Them Hostage",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 129,
+    "topic": "How Deepfakes Are Made: The Technology Behind AI Face Swaps",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 130,
+    "topic": "How Password Cracking Works: Dictionary, Brute Force, and Rainbow Tables",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 131,
+    "topic": "How a Man-in-the-Middle Attack Intercepts Your Data",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 132,
+    "topic": "How SQL Injection Can Dump an Entire Database in Seconds",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 133,
+    "topic": "How Social Engineering Bypasses Every Technical Security Control",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 134,
+    "topic": "How a Zero-Day Exploit Is Discovered, Sold, and Weaponized",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 135,
+    "topic": "How Keyloggers Record Every Keystroke Without You Knowing",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 136,
+    "topic": "How Botnets Are Built From Millions of Hacked Devices",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 137,
+    "topic": "How the Dark Web Actually Works \u2014 Tor, Onion Routing Explained Simply",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 138,
+    "topic": "How Stalkerware Secretly Monitors Your Phone Without Detection",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 139,
+    "topic": "How DNS Hijacking Redirects You to Fake Websites That Look Real",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 140,
+    "topic": "How Supply Chain Attacks Compromise Software Before You Download It",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 141,
+    "topic": "How Credential Stuffing Uses One Leaked Password to Break Into 50 Accounts",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 142,
+    "topic": "How OSINT Lets Anyone Build a Full Profile on You Using Public Data",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 143,
+    "topic": "How Evil Twin WiFi Attacks Steal Your Data at Airports and Cafes",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 144,
+    "topic": "How Juice Jacking Uses Public USB Charging Ports to Hack Your Phone",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 145,
+    "topic": "How Quantum Computing Will Break Every Encryption Standard We Use Today",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 146,
+    "topic": "How Browser Fingerprinting Tracks You Without Cookies or Login",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 147,
+    "topic": "How Formjacking Silently Steals Credit Cards From Legitimate Websites",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 148,
+    "topic": "How Vishing (Voice Phishing) Scams Steal Banking Credentials by Phone",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 149,
+    "topic": "How AI Voice Cloning Is Used to Authorize Fraudulent Wire Transfers",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 150,
+    "topic": "How the SS7 Protocol Flaw Lets Anyone Track Your Phone's Location",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 151,
+    "topic": "How a Rubber Ducky USB Drive Can Hack Any Computer in 30 Seconds",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 152,
+    "topic": "How Facial Recognition Works \u2014 And Why It Gets It Wrong",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 153,
+    "topic": "How Cryptocurrency Mixers Launder Billions in Stolen Crypto",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 154,
+    "topic": "How Insider Threats Are Statistically More Dangerous Than External Attacks",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 155,
+    "topic": "How AI Models Are Poisoned to Produce Wrong \u2014 or Dangerous \u2014 Outputs",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 156,
+    "topic": "How Prompt Injection Attacks Hijack AI Assistants",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 157,
+    "topic": "How Data Brokers Collect and Sell Your Personal Information Legally",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 158,
+    "topic": "How End-to-End Encryption Actually Works \u2014 And Its Real Limits",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 159,
+    "topic": "How Steganography Hides Secret Messages Inside Innocent Images",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 160,
+    "topic": "How a Watering Hole Attack Targets an Entire Industry Through One Website",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 161,
+    "topic": "How Adversarial AI Images Fool Computer Vision With Invisible Edits",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 162,
+    "topic": "5 Signs Your Phone Has Been Hacked Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 163,
+    "topic": "7 Things Hackers Know About You From Your Social Media",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 164,
+    "topic": "The 5 Most Dangerous Hacking Groups in the World Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 165,
+    "topic": "6 Free Tools That Protect Your Privacy Better Than Any VPN",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 166,
+    "topic": "4 Types of Malware You've Probably Already Encountered",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 167,
+    "topic": "The Top 10 Worst Data Breaches in History \u2014 Ranked by Damage",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 168,
+    "topic": "5 Browser Extensions That Are Actually Spying on You",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 169,
+    "topic": "3 Mistakes That Make You the Perfect Phishing Target",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 170,
+    "topic": "The 7 Biggest AI Safety Failures So Far",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 171,
+    "topic": "5 Countries With the Most Advanced Cyber Warfare Programs",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 172,
+    "topic": "8 Signs a Website Is Fake Before You Even Log In",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 173,
+    "topic": "The 4 Most Common Ways People Get Their Accounts Hacked",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 174,
+    "topic": "5 Cybersecurity Myths That Are Getting People Hacked",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 175,
+    "topic": "6 Privacy Settings You Should Change on Your iPhone Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 176,
+    "topic": "6 Privacy Settings You Should Change on Your Android Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 177,
+    "topic": "The 5 Most Dangerous Apps Still on the App Store",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 178,
+    "topic": "3 Things Hackers Do in the First 60 Minutes After Breaking Into a Network",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 179,
+    "topic": "7 Real Tools Hackers Use That You Can Download for Free",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 180,
+    "topic": "4 Reasons Why Small Businesses Are Hackers' Favorite Targets",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 181,
+    "topic": "The 5 Biggest AI Deepfake Scams of the Past Year",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 182,
+    "topic": "6 Cybersecurity Careers That Pay Over $150K \u2014 No Degree Required",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 183,
+    "topic": "5 Dark Web Marketplaces That Were Taken Down by Law Enforcement",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 184,
+    "topic": "The 4 Types of Hackers \u2014 Which One Should You Actually Fear?",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 185,
+    "topic": "5 VPNs That Were Caught Selling Your Data",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 186,
+    "topic": "8 Items in Your Home That Are Actively Spying on You",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 187,
+    "topic": "The 3 Biggest AI Risks According to the World's Top Scientists",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 188,
+    "topic": "5 Ways Your Employer Can Legally Monitor You Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 189,
+    "topic": "4 Tactics Scammers Use Specifically on the Elderly",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 190,
+    "topic": "The 6 Most Notorious Hackers in History \u2014 and What Happened to Them",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 191,
+    "topic": "5 Critical Infrastructure Systems That Have Already Been Hacked",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 192,
+    "topic": "7 Red Flags in a Text Message That Mean You're Being Scammed",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 193,
+    "topic": "The 4 Phases of a Professional Cyberattack \u2014 Step by Step",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 194,
+    "topic": "5 AI Tools That Could Be Misused for Surveillance Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 195,
+    "topic": "6 Things the NSA Can Do That Still Aren't Public Knowledge",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 196,
+    "topic": "The 3 Biggest Mistakes Companies Make After a Data Breach",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 197,
+    "topic": "LIVE: Breaking Cybersecurity Story \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 198,
+    "topic": "LIVE: Latest AI Development \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 199,
+    "topic": "LIVE: New Ransomware Campaign Targeting Critical Infrastructure",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 200,
+    "topic": "LIVE: Zero-Day Vulnerability Disclosed \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 201,
+    "topic": "LIVE: Major Data Breach Announced \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 202,
+    "topic": "LIVE: Government Cybersecurity Advisory \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 203,
+    "topic": "LIVE: New AI Model Release and Security Implications",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 204,
+    "topic": "LIVE: Nation-State Cyberattack Breaking News",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 205,
+    "topic": "LIVE: Big Tech Privacy Scandal \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 206,
+    "topic": "LIVE: Ransomware Group Takedown \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 207,
+    "topic": "How Facebook Tracks You Even When You're Not on Facebook",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 208,
+    "topic": "How Google Knows Where You Slept Last Night",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 209,
+    "topic": "How Your Car Is Secretly Building a Data Profile on You",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 210,
+    "topic": "How Advertisers Build a Shadow Profile Before You Sign Up",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 211,
+    "topic": "How Law Enforcement Uses Geofence Warrants to Track Everyone at a Location",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 212,
+    "topic": "How Facial Recognition Has Wrongly Arrested 5 Innocent People So Far",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 213,
+    "topic": "The Data Your Phone Sends to Apple and Google Every 4.5 Minutes",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 214,
+    "topic": "5 Things Your ISP Knows About You and Can Legally Sell",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 215,
+    "topic": "How License Plate Readers Are Building a National Movement Database",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 216,
+    "topic": "The Hidden Danger of Sharing Your Location in Dating Apps",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 217,
+    "topic": "How Smart Speakers Record Conversations Without Their Wake Word",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 218,
+    "topic": "The Privacy Nightmare Inside Your Fitness Tracker's Data Policy",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 219,
+    "topic": "How Retail Stores Track Your Shopping Behavior Using Bluetooth",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 220,
+    "topic": "How TikTok Collects Data That No Other App Dares to Ask For",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 221,
+    "topic": "Why Privacy-First Search Engines Still Leak Your Data",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 222,
+    "topic": "How Your Deleted WhatsApp Messages Aren't Really Gone",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 223,
+    "topic": "The Hidden Risk in Sharing Your DNA With Ancestry Sites",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 224,
+    "topic": "How Stalkers Are Using AirTags to Track Victims in Plain Sight",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 225,
+    "topic": "Why Signal Is the Only Messenger That Can't Reveal Your Data",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 226,
+    "topic": "How Zero-Knowledge Proof Lets You Prove You Know Something Without Revealing It",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 227,
+    "topic": "How to Check If Your Email Was Leaked in a Data Breach Right Now",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 228,
+    "topic": "The Only Password Strategy That Actually Keeps You Safe in 2025",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 229,
+    "topic": "How to Set Up 2FA the Right Way \u2014 Not All 2FA Is Equal",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 230,
+    "topic": "Why You Should Never Use SMS for Two-Factor Authentication",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 231,
+    "topic": "How to Make Your Gmail Completely Impossible to Breach",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 232,
+    "topic": "The Right Way to Use a VPN \u2014 And When Not to Bother",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 233,
+    "topic": "How to Detect if Stalkerware Is on Your Phone in Under 5 Minutes",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 234,
+    "topic": "5 Things to Do Immediately If You Think You've Been Hacked",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 235,
+    "topic": "Why You Need to Freeze Your Credit Right Now \u2014 Even If You're Young",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 236,
+    "topic": "How to Create a Digital Will Before Your Accounts Are Inaccessible Forever",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 237,
+    "topic": "The Browser Settings That Stop 90% of Online Tracking Immediately",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 238,
+    "topic": "How to Spot a Fake Login Page Before You Enter Your Password",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 239,
+    "topic": "Why Reusing Passwords Is the Most Dangerous Thing You Do Online",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 240,
+    "topic": "How to Secure Your Home WiFi Router in 10 Minutes",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 241,
+    "topic": "The Right Way to Dispose of Old Devices So Your Data Is Gone Forever",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 242,
+    "topic": "How to Know If Your Webcam Has Been Accessed Without Permission",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 243,
+    "topic": "5 Security Mistakes Even Tech-Savvy People Make",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 244,
+    "topic": "Why Updating Software Immediately Is Your Best Defense Against Hackers",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 245,
+    "topic": "How to Lock Down Your Social Media Before Hackers Use It Against You",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 246,
+    "topic": "The One Setting That Stops Most Ransomware Cold",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 247,
+    "topic": "How Quantum Computers Will Make All Current Encryption Useless",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 248,
+    "topic": "Post-Quantum Cryptography: The Race to Secure the Internet Before Q-Day",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 249,
+    "topic": "How AI Is Making Phishing So Convincing That Even Experts Are Fooled",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 250,
+    "topic": "The Rise of Ransomware-as-a-Service: Anyone Can Be a Hacker Now",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 251,
+    "topic": "How Hackers Are Targeting AI Models Themselves \u2014 Model Poisoning Explained",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 252,
+    "topic": "Why 5G Networks Create New Attack Surfaces We're Not Prepared For",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 253,
+    "topic": "How Cybercriminals Are Using Generative AI to Scale Attacks 100x",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 254,
+    "topic": "The Coming Satellite Hacking Threat Nobody Is Talking About",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 255,
+    "topic": "How AI-Generated Synthetic Media Will Make Insider Trading Unprovable",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 256,
+    "topic": "The Rise of Living-off-the-Land Attacks That Use Your Own Tools Against You",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 257,
+    "topic": "How Hackers Are Using Legitimate Cloud Services to Hide Their Attacks",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 258,
+    "topic": "Why Industrial Control Systems Are the Next Big Ransomware Target",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 259,
+    "topic": "How Hackers Are Exploiting GitHub Actions in Supply Chain Attacks",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 260,
+    "topic": "The Threat of AI-Assisted OSINT for Targeted Spear Phishing",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 261,
+    "topic": "How Deepfake Audio Is Being Used in Real-Time Phone Scams",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 262,
+    "topic": "The Rise of API Attacks: Why Your App's Backend Is the Weakest Link",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 263,
+    "topic": "How Smart Contract Vulnerabilities Are Draining Billions from DeFi",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 264,
+    "topic": "Why Healthcare Is the Most Targeted Industry for Ransomware in 2025",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 265,
+    "topic": "How AI Chatbots Can Be Weaponized to Spread Disinformation at Scale",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 266,
+    "topic": "The Growing Threat of Cybersecurity Attacks on Space Infrastructure",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 267,
+    "topic": "Kevin Mitnick: The Most Wanted Hacker in History \u2014 His Full Story",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 268,
+    "topic": "Anonymous: The Decentralized Hacking Collective That Took on Governments",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 269,
+    "topic": "Gary McKinnon: The Autistic Hacker Who Broke Into NASA Looking for UFOs",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 270,
+    "topic": "Albert Gonzalez: How One Man Stole 170 Million Credit Cards",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 271,
+    "topic": "The Morris Worm 1988: The Internet's First Cyberattack",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 272,
+    "topic": "Kimsuky: North Korea's Cyber Espionage Group Targeting Nuclear Secrets",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 273,
+    "topic": "APT41: China's Hacker Group That Blends Espionage With Financial Crime",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 274,
+    "topic": "Fancy Bear: The Russian Hackers Behind the 2016 US Election Interference",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 275,
+    "topic": "Scattered Spider: The Gen Z Hacking Gang That Breached MGM and Caesars",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 276,
+    "topic": "The LockBit Takedown: How Interpol Dismantled the World's Top Ransomware Gang",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 277,
+    "topic": "How the FBI Caught the Hacker Who Stole $4.5 Billion in Bitcoin",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 278,
+    "topic": "The Silk Road Story: How Ross Ulbricht Built \u2014 and Lost \u2014 a $1B Dark Web Empire",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 279,
+    "topic": "Operation Payback: Anonymous Attacks PayPal, Visa, and MasterCard",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 280,
+    "topic": "Julian Assange: WikiLeaks, Surveillance, and a Decade-Long Legal Battle",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 281,
+    "topic": "Edward Snowden: How One Man Exposed the NSA's Global Surveillance Program",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 282,
+    "topic": "How the FBiOS Battle Between Apple and the FBI Changed Privacy Law Forever",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 283,
+    "topic": "The Carbanak Gang: Eastern European Hackers Who Stole $1B from Banks",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 284,
+    "topic": "How Elite Bug Bounty Hunters Make $1M a Year Finding Security Flaws",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 285,
+    "topic": "What Happens Inside a Red Team Exercise at a Fortune 500 Company",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 286,
+    "topic": "How DEF CON Became the World's Most Dangerous and Respected Hacker Conference",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 287,
+    "topic": "How the CIA's Vault 7 Hacking Arsenal Was Leaked by Its Own Employee",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 288,
+    "topic": "China's Great Firewall: How 1.4 Billion People Are Surveilled Online",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 289,
+    "topic": "Russia's Information Warfare Playbook \u2014 Exposed",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 290,
+    "topic": "How North Korea Uses Crypto Hacking to Fund Its Nuclear Program",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 291,
+    "topic": "Iran's Cyber Capabilities: From Shamoon to Targeting Saudi Arabia",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 292,
+    "topic": "The Five Eyes Alliance: How 5 Countries Share Your Surveillance Data",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 293,
+    "topic": "How CISA Fights Cyberattacks on US Critical Infrastructure",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 294,
+    "topic": "The Vulnerability Equities Process: Why Governments Stockpile Zero-Days",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 295,
+    "topic": "How the US Government Uses Cyber Operations as Foreign Policy Tools",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 296,
+    "topic": "The Budapest Convention: The Only International Cybercrime Treaty That Exists",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 297,
+    "topic": "How the EU's GDPR Changed Global Privacy Law \u2014 and Its Massive Failures",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 298,
+    "topic": "Why the UN Can't Agree on Global Cybersecurity Norms",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 299,
+    "topic": "How India's Aadhaar Biometric Database Exposed 1.2 Billion Citizens",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 300,
+    "topic": "How Governments Are Building Social Credit Systems Using AI",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 301,
+    "topic": "The NSA's PRISM Program: What We Know About Mass Surveillance Today",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 302,
+    "topic": "How Hackers Exploit Bluetooth to Access Nearby Phones Without Touching Them",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 303,
+    "topic": "The NSO Group's iPhone Zero-Click Exploit: No Tap Required to Hack You",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 304,
+    "topic": "How Smart Home Devices Are the Easiest Entry Point Into Your Network",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 305,
+    "topic": "Why Your Baby Monitor Is Probably Accessible to Anyone on the Internet",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 306,
+    "topic": "How Medical IoT Devices Are Being Hacked in Hospitals Right Now",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 307,
+    "topic": "The Danger of Free Phone Charging Cables From Unknown Sources",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 308,
+    "topic": "How Rogue Cell Towers (IMSI Catchers) Intercept Your Calls and Texts",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 309,
+    "topic": "Why Your Smart Thermostat Knows More About You Than Your Doctor",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 310,
+    "topic": "How Industrial IoT Devices Are Becoming Attack Vectors for Nation-States",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 311,
+    "topic": "The Security Nightmare of 5 Billion Unpatched IoT Devices on the Internet",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 312,
+    "topic": "How Crypto Exchanges Get Hacked \u2014 And Why Withdrawals Disappear",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 313,
+    "topic": "How Romance Scammers Steal $1 Billion a Year Through Crypto Pig Butchering",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 314,
+    "topic": "The NFT Scam Ecosystem: Rug Pulls, Wash Trading, and Fake Hype",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 315,
+    "topic": "How DeFi Flash Loan Attacks Drain Hundreds of Millions in Seconds",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 316,
+    "topic": "How Crypto Mixer Tornado Cash Was Sanctioned \u2014 and Why It Still Runs",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 317,
+    "topic": "How Hackers Use Crypto to Launder Ransomware Payments Across Borders",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 318,
+    "topic": "Why On-Chain Data Makes Crypto Less Anonymous Than Cash",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 319,
+    "topic": "How Chainalysis Traces Stolen Crypto Across 100 Wallets",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 320,
+    "topic": "The FTX Collapse: Was Sam Bankman-Fried a Fraudster or Just Incompetent?",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 321,
+    "topic": "How North Korea's Lazarus Group Has Stolen $3B in Crypto Since 2017",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 322,
+    "topic": "Why AI Alignment Is the Most Important Unsolved Problem in Computer Science",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 323,
+    "topic": "How AI Systems Develop Emergent Behaviors Their Creators Didn't Program",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 324,
+    "topic": "The Paperclip Maximizer: The Thought Experiment That Terrifies AI Researchers",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 325,
+    "topic": "Why Anthropic and OpenAI Are Racing to Solve AI Safety Before It's Too Late",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 326,
+    "topic": "How Bias in AI Training Data Creates Racist and Discriminatory Systems",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 327,
+    "topic": "The Danger of AI Models That Learn to Deceive Their Operators",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 328,
+    "topic": "How Regulatory Capture Could Make AI Safety Laws Meaningless",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 329,
+    "topic": "Why Some of the World's Top AI Scientists Signed a Letter Calling for a Pause",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 330,
+    "topic": "The Case for Open-Source AI \u2014 and Why It's Also the Case Against It",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 331,
+    "topic": "How AI Is Already Being Used in Autonomous Weapons Systems",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 332,
+    "topic": "The Real Reason Big Tech Is Scared of AI Regulation",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 333,
+    "topic": "How Deepfakes Are Undermining Trust in Video Evidence in Courtrooms",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 334,
+    "topic": "AI-Generated CSAM: The Darkest Consequence of Generative AI",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 335,
+    "topic": "Why the EU AI Act Is Either the Future of Governance or a Disaster",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 336,
+    "topic": "How China and the US Are Competing for AI Dominance \u2014 and What It Means for You",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 337,
+    "topic": "The Full Anatomy of a Spear Phishing Attack \u2014 From Research to Click",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 338,
+    "topic": "How Pretexting Lets Hackers Get Your Information by Simply Asking",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 339,
+    "topic": "The Psychology of Why Smart People Fall for Obvious Scams",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 340,
+    "topic": "How Romance Scammers Build Fake Relationships Over 6 Months to Steal Millions",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 341,
+    "topic": "The IRS Phone Scam: How It Works and Why It Still Fools People",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 342,
+    "topic": "How Grandparent Scams Target Elderly Victims Using AI Voice Cloning",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 343,
+    "topic": "The Anatomy of a Business Email Compromise Attack That Costs $2.9B a Year",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 344,
+    "topic": "How Scammers Impersonate Tech Support to Get Remote Access to Your Computer",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 345,
+    "topic": "The Pig Butchering Scam Playbook: Crypto Fraud That's Stolen $75B",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 346,
+    "topic": "How Deepfake Video Calls Are Being Used to Bypass Identity Verification",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 347,
+    "topic": "How Social Engineers Used LinkedIn to Infiltrate Defense Contractors",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 348,
+    "topic": "The Advance Fee Fraud Evolution: From Nigerian Prince to AI Impersonators",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 349,
+    "topic": "How Quishing (QR Code Phishing) Bypasses Every Email Security Filter",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 350,
+    "topic": "How Package Delivery Text Scams Are Stealing Banking Credentials at Scale",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 351,
+    "topic": "The Anatomy of a Fake Job Offer That Installs Malware on Your Computer",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 352,
+    "topic": "The Google Project Zero Team: Elite Hackers Who Find Flaws Before the Bad Guys",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 353,
+    "topic": "How Bug Bounty Programs Pay Hackers to Find Vulnerabilities Legally",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 354,
+    "topic": "The Whistleblower Who Exposed Facebook's Internal Research on Teen Mental Health",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 355,
+    "topic": "How the CIA Used a Fake Vaccination Program as Cover for Intelligence Operations",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 356,
+    "topic": "The Juniper Networks Backdoor: Someone Hid a Secret in US Network Equipment",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 357,
+    "topic": "The 2003 Northeast Blackout: How a Software Bug Cascaded Into Disaster",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 358,
+    "topic": "How the Boeing 737 MAX Software Failure Killed 346 People",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 359,
+    "topic": "The Knight Capital Algorithm Disaster: $440M Lost in 45 Minutes of Bad Code",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 360,
+    "topic": "How an Amazon EC2 Misconfiguration Took Down the Internet for 8 Hours in 2017",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 361,
+    "topic": "The Facebook Outage 2021: How a Single BGP Change Deleted Facebook From the Internet",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 362,
+    "topic": "How a Faulty CrowdStrike Update Grounded Planes and Closed Hospitals Worldwide",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 363,
+    "topic": "The Therac-25 Radiation Machine: How a Software Bug Killed 6 Cancer Patients",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 364,
+    "topic": "How Tesla's Autopilot Has Been Tricked by Simple Adversarial Patches on Roads",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 365,
+    "topic": "The SIM Swap That Stole $24M in Cryptocurrency From One Person in One Night",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 366,
+    "topic": "How a Security Researcher Found a Backdoor in XZ Utils Before It Hit Production",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 367,
+    "topic": "5 Chrome Extensions You Should Delete Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 368,
+    "topic": "The 6 Biggest Cybersecurity Predictions for 2025 That Already Came True",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 369,
+    "topic": "4 Ransomware Families That Are Targeting You Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 370,
+    "topic": "7 Cybersecurity Certifications That Are Actually Worth It in 2025",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 371,
+    "topic": "5 Open-Source Intelligence Tools That Are Terrifyingly Powerful",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 372,
+    "topic": "The 3 Most Underrated Privacy Tools Nobody Is Talking About",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 373,
+    "topic": "8 Things Hackers Can Learn About You From One Photo",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 374,
+    "topic": "5 Biggest Cybersecurity Mistakes That Got CEOs Fired",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 375,
+    "topic": "The 4 Most Common Ransomware Entry Points in Corporate Networks",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 376,
+    "topic": "6 Questions to Ask Before Trusting Any Security Company With Your Data",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 377,
+    "topic": "You Think Paying Ransomware Gets Your Files Back? Most Victims Get Nothing",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 378,
+    "topic": "You Think Your Kids Are Safe Online Because of Parental Controls? Not Really",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 379,
+    "topic": "You Think Cybersecurity Is Only for Big Companies? Your Startup Is the Target",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 380,
+    "topic": "You Think AI Art Generators Are Just Creative Tools? Here's the Dark Side",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 381,
+    "topic": "You Think End-to-End Encryption Means Nobody Can Read Your Messages? Almost",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 382,
+    "topic": "You Think Hackers Are After You Personally? The Reality Is More Frightening",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 383,
+    "topic": "You Think a Firewall Alone Protects Your Network? Modern Attackers Walk Right Through",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 384,
+    "topic": "You Think Tor Makes You Completely Anonymous? Law Enforcement Disagrees",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 385,
+    "topic": "You Think Encrypted Email Is Private? The Metadata Tells Everything",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 386,
+    "topic": "You Think Your Smart Lock Is More Secure Than a Deadbolt? Think Again",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 387,
+    "topic": "You Think Free Antivirus Is Enough? Here's What It Misses",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 388,
+    "topic": "You Think Hackers Need to Trick You Into Clicking Something? Zero-Clicks Changed Everything",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 389,
+    "topic": "You Think Cloud Storage Is Automatically Backed Up? Read the Terms",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 390,
+    "topic": "You Think Using a Password Manager Is Risky? Not Using One Is Riskier",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 391,
+    "topic": "You Think Your Old Deleted Social Media Posts Are Gone? They're Not",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 392,
+    "topic": "You Think AI-Generated Text Is Always Detectable? Detectors Are Already Failing",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 393,
+    "topic": "You Think Cybersecurity Is About Technical Skill? Social Engineering Wins Every Time",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 394,
+    "topic": "You Think Disconnecting From the Internet Keeps You Safe? Air-Gap Attacks Are Real",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 395,
+    "topic": "You Think Your Home Network Is Separate From Your Work Network? VPNs Blur That Line",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 396,
+    "topic": "You Think Open-Source Software Is More Secure? The XZ Utils Backdoor Says Otherwise",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 397,
+    "topic": "5 Countries Where the Government Can Demand Access to Your Device at the Border",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 398,
+    "topic": "7 Cybersecurity Terms Everyone Gets Wrong",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 399,
+    "topic": "The 4 Most Dangerous Hacking Techniques That Require Zero Technical Skill",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 400,
+    "topic": "6 Red Flags That a Job Offer Is Actually a Malware Installation Scam",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 401,
+    "topic": "5 Things to Check Before Plugging Any USB Device Into Your Computer",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 402,
+    "topic": "The 3 Best Password Managers in 2025 \u2014 Ranked by Security",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 403,
+    "topic": "8 Privacy-Respecting Alternatives to Big Tech Products",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 404,
+    "topic": "5 Ways Nation-State Hackers Are Different From Criminal Hackers",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 405,
+    "topic": "The 6 Most Valuable Things Hackers Steal \u2014 It's Not Always Money",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 406,
+    "topic": "4 Zero-Day Vulnerabilities That Changed Cybersecurity History",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 407,
+    "topic": "7 Smart Steps to Take After a Data Breach Notification Email",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 408,
+    "topic": "5 AI Companies That Had Major Security or Privacy Incidents in 2024",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 409,
+    "topic": "The 3 Most Dangerous Cyber Threats to Small Businesses in 2025",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 410,
+    "topic": "6 Common Cybersecurity Interview Questions and Their Real Answers",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 411,
+    "topic": "5 Reasons Two-Factor Authentication via Authenticator App Beats SMS",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 412,
+    "topic": "The 4 Biggest Misconceptions About Cybersecurity Careers",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 413,
+    "topic": "7 Signs Your Email Account Has Already Been Compromised",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 414,
+    "topic": "5 Free Cybersecurity Tools That Professionals Actually Use",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 415,
+    "topic": "The 3 Types of People Most Targeted by Hackers \u2014 Are You One of Them?",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 416,
+    "topic": "6 Things That Happen to Your Data After a Company Sells It",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 417,
+    "topic": "5 Websites That Reveal Terrifying Amounts of Info About You for Free",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 418,
+    "topic": "The 4 Biggest Ransomware Mistakes Victims Make That Make Things Worse",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 419,
+    "topic": "8 Cybersecurity Habits That Take Under 5 Minutes and Protect You for Years",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 420,
+    "topic": "5 Ways AI Is Being Used to Improve Cybersecurity Defenses Right Now",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 421,
+    "topic": "The 6 Most Common Attack Vectors for Corporate Network Breaches",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 422,
+    "topic": "4 Times Bug Bounty Hunters Found Catastrophic Vulnerabilities in Major Platforms",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 423,
+    "topic": "7 Pieces of Information You Should Never Post on Social Media",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 424,
+    "topic": "5 Things Your Phone Knows About You That Your Doctor Doesn't",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 425,
+    "topic": "The 3 Biggest Flaws in How Companies Handle Data Breach Notifications",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 426,
+    "topic": "6 Security Headers Every Website Should Have \u2014 and Most Don't",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 427,
+    "topic": "5 Industries That Are Completely Unprepared for Cyberattacks",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 428,
+    "topic": "The 4 Stages of a Ransomware Attack \u2014 From First Click to Ransom Note",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 429,
+    "topic": "7 Countries That Have the Weakest Cybersecurity Laws",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 430,
+    "topic": "5 AI-Powered Scam Tactics That Are New in the Last 12 Months",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 431,
+    "topic": "The 3 Most Successful Social Engineering Attacks on Government Systems",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 432,
+    "topic": "LIVE: New Malware Family Targeting Financial Institutions \u2014 News React",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 433,
+    "topic": "LIVE: Critical Vulnerability in Widely Used Open-Source Library",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 434,
+    "topic": "LIVE: AI Regulation Bill Introduced \u2014 Cybersecurity Implications",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 435,
+    "topic": "LIVE: Major Cloud Provider Outage Tied to Security Incident",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 436,
+    "topic": "LIVE: Hacking Group Claims Breach of Government Agency",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 437,
+    "topic": "LIVE: New Deepfake Scam Campaign Targeting Executives",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 438,
+    "topic": "LIVE: International Cybercrime Ring Dismantled by Europol",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 439,
+    "topic": "LIVE: Zero-Day in Popular Software Used in Active Attacks",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 440,
+    "topic": "LIVE: Data Broker Exposed \u2014 Millions of Records Available Online",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 441,
+    "topic": "LIVE: AI Startup's Model Jailbroken to Produce Dangerous Content",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 442,
+    "topic": "LIVE: Record Ransomware Payment Confirmed by Insurance Firm",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 443,
+    "topic": "LIVE: Smart City Infrastructure Targeted by Hackers",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 444,
+    "topic": "LIVE: Major Social Platform Admits Training AI on Private Messages",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 445,
+    "topic": "LIVE: Cyberattack Disrupts Hospital Network Across Multiple States",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 446,
+    "topic": "LIVE: New Spyware Tool Found Targeting Journalists and Activists",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 447,
+    "topic": "LIVE: Election Infrastructure Security Report Released",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 448,
+    "topic": "LIVE: Critical Infrastructure Attack \u2014 Details Emerging",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 449,
+    "topic": "LIVE: AI Company Discloses Training Data Security Incident",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 450,
+    "topic": "LIVE: International Sanctions Imposed on Ransomware Operators",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 451,
+    "topic": "LIVE: New Privacy Law Passes \u2014 What It Means for Big Tech",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 452,
+    "topic": "The Cognizant Maze Ransomware Attack: $70M Ransom for an IT Giant",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 453,
+    "topic": "How Iranian Hackers Targeted Israeli Water Infrastructure in 2020",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 454,
+    "topic": "The Garmin Ransomware Attack: WastedLocker Took Down GPS Services Worldwide",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 455,
+    "topic": "The SolarWinds Hack: The Full 14-Month Timeline of the Most Sophisticated Attack",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 456,
+    "topic": "The Bangladesh Swift Heist: $81M Stolen via Typo That Saved $850M More",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 457,
+    "topic": "How Hackers Stole $600M From Poly Network \u2014 Then Had a Conversation With the Blockchain",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 458,
+    "topic": "The Rackspace Email Server Breach: PLAY Ransomware Wiped Customer Data",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 459,
+    "topic": "How Anonymous Took Down HBGary Federal in 3 Days Using SQL Injection",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 460,
+    "topic": "The LifeLabs Breach: 15 Million Canadian Patient Records Held for Ransom",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 461,
+    "topic": "The 3CX Supply Chain Attack: A Hacked App Infected Millions of Businesses",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 462,
+    "topic": "The Flagstar Bank Breach: Hackers Stole Social Security Numbers of 1.5M Customers",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 463,
+    "topic": "How Lazarus Group Stole $625M From Axie Infinity's Ronin Bridge",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 464,
+    "topic": "The Ferrari Data Breach: Hackers Demanded Ransom \u2014 Ferrari Refused to Pay",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 465,
+    "topic": "How a Single Spreadsheet Error Caused Knight Capital to Lose $440M",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 466,
+    "topic": "The Kronos Payroll Hack: Ransomware Left Thousands of Workers Without Pay for Weeks",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 467,
+    "topic": "How OAuth2 Works \u2014 And How Attackers Exploit It",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 468,
+    "topic": "How JWT Tokens Are Forged to Gain Unauthorized Access",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 469,
+    "topic": "How BGP Hijacking Can Redirect Internet Traffic for an Entire Country",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 470,
+    "topic": "How Cross-Site Scripting (XSS) Steals Your Session Without You Knowing",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 471,
+    "topic": "How Subdomain Takeovers Let Hackers Host Phishing Pages on Legitimate Domains",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 472,
+    "topic": "How Ransomware Operators Spend Months Inside a Network Before Encrypting",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 473,
+    "topic": "How IDOR Vulnerabilities Expose Other Users' Private Data With a Simple URL Change",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 474,
+    "topic": "How Packet Sniffing Works \u2014 And Why Unencrypted WiFi Is a Gift to Hackers",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 475,
+    "topic": "How Typosquatting Tricks Developers Into Downloading Malicious Packages",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 476,
+    "topic": "How Container Escape Attacks Break Out of Docker and Kubernetes Sandboxes",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 477,
+    "topic": "How Kerberoasting Extracts Windows Domain Credentials Without Admin Rights",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 478,
+    "topic": "How Pass-the-Hash Attacks Let Hackers Authenticate Without Knowing Your Password",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 479,
+    "topic": "How Path Traversal Lets Attackers Read Any File on a Web Server",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 480,
+    "topic": "How SSRF Tricks Servers Into Making Requests They Shouldn't",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 481,
+    "topic": "How Polymorphic Malware Rewrites Itself to Evade Every Signature-Based Scanner",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 482,
+    "topic": "This AI Can Predict Which Employees Will Quit \u2014 Before They Know Themselves",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 483,
+    "topic": "An AI Beat Human Poker Champions by Bluffing \u2014 Then Lied About How It Won",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 484,
+    "topic": "This AI System Learned to Manipulate Humans in Negotiations Without Being Programmed To",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 485,
+    "topic": "GPT-4 Hired a Human to Solve a CAPTCHA by Pretending to Be Visually Impaired",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 486,
+    "topic": "This AI Discovered a Novel Antibiotic That Kills Drug-Resistant Bacteria",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 487,
+    "topic": "How AI Systems Are Now Patching Their Own Vulnerabilities Without Human Input",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 488,
+    "topic": "An AI Model Achieved Superhuman Performance on Cybersecurity CTF Challenges",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 489,
+    "topic": "This AI Can Identify Your Political Views From Your Face With 72% Accuracy",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 490,
+    "topic": "How Large Language Models Are Being Used to Automate APT Reconnaissance",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 491,
+    "topic": "The AI System That Can Break CAPTCHAs Designed Specifically to Defeat AI",
+    "format": 2,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 492,
+    "topic": "How Hackers Use Google Dorks to Find Exposed Databases With a Single Search",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 493,
+    "topic": "The Most Dangerous Piece of Code Ever Written \u2014 The Morris Worm Explained",
+    "format": 1,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 494,
+    "topic": "5 Times Ethical Hackers Saved Companies From Catastrophic Breaches",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 495,
+    "topic": "You Think Deleting Your Google Search History Removes It? Here's the Truth",
+    "format": 3,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 496,
+    "topic": "LIVE: Massive Breach at a Major Retailer \u2014 Customer Payment Data Exposed",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 497,
+    "topic": "How Shoulder Surfing Steals Your PIN \u2014 And How to Stop It",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 498,
+    "topic": "The 4 Biggest Mistakes That Get Security Professionals Fired",
+    "format": 5,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 499,
+    "topic": "How Hackers Use Legitimate Google Ads to Deliver Malware to Searchers",
+    "format": 4,
+    "used": false,
+    "date_used": null
+  },
+  {
+    "id": 500,
+    "topic": "LIVE: AI Regulation Framework Announced \u2014 What Changes for Tech Companies",
+    "format": 6,
+    "used": false,
+    "date_used": null
+  }
+]

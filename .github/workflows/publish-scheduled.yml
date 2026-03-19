@@ -1,0 +1,76 @@
+name: Publish Scheduled TikTok Posts
+
+# Runs every hour to flush jobs whose publish_at time has passed.
+on:
+  schedule:
+    - cron: "0 * * * *"    # top of every hour
+  workflow_dispatch:        # allow manual trigger
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python setup ───────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # ── 3. System dependencies ────────────────────────────────────────────────
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      # ── 4. Python dependencies ────────────────────────────────────────────────
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      # ── 5. Restore tokens + queue ─────────────────────────────────────────────
+      - name: Restore tokens and schedule queue
+        run: |
+          mkdir -p config output
+          if [ -n "${{ secrets.TIKTOK_TOKEN_B64 }}" ]; then
+            echo "${{ secrets.TIKTOK_TOKEN_B64 }}" | base64 -d > config/tiktok_token.json
+          fi
+          if [ -n "${{ secrets.SCHEDULE_QUEUE_B64 }}" ]; then
+            echo "${{ secrets.SCHEDULE_QUEUE_B64 }}" | base64 -d > config/schedule_queue.json
+          else
+            echo "No schedule queue found — nothing to do."
+            exit 0
+          fi
+
+      # ── 6. Run videos from artifacts ──────────────────────────────────────────
+      # TikTok upload needs the actual video.mp4 files from previous pipeline runs.
+      # These are stored as GitHub Actions artifacts from generate-shorts.yml.
+      # Download them before publishing.
+      - name: Download recent video artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true    # OK if no artifacts exist yet
+        with:
+          pattern: cipherpulse-shorts-*
+          path: output/
+          merge-multiple: true
+
+      # ── 7. Flush scheduled queue ──────────────────────────────────────────────
+      - name: Publish scheduled TikTok posts
+        env:
+          TIKTOK_CLIENT_KEY:    ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+        run: python3 -m src.orchestrator --publish-scheduled
+
+      # ── 8. Upload updated queue as artifact ───────────────────────────────────
+      - name: Upload updated schedule queue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schedule-queue-${{ github.run_number }}
+          path: config/schedule_queue.json
+          retention-days: 7

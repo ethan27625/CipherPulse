@@ -1,0 +1,11 @@
+{
+  "_comment": "Tracks generation and upload status per video. Keys are output directory names (YYYY-MM-DD_topic-slug).",
+  "_schema": {
+    "status": "one of: generating | generated | uploading | uploaded | failed",
+    "platforms": {
+      "youtube": "one of: pending | uploaded | failed | skipped",
+      "tiktok": "one of: pending | queued | uploaded | failed | skipped",
+      "instagram": "one of: pending | queued | uploaded | failed | skipped"
+    }
+  }
+}
