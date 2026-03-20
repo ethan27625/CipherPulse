@@ -52,15 +52,15 @@
     "id": 8,
     "topic": "MOVEit: The Zero-Day That Hit 2,500 Organizations in Weeks",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 9,
     "topic": "LastPass Breach: Your Encrypted Password Vault Was Stolen",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 10,

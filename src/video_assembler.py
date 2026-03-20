@@ -63,12 +63,12 @@ FONTS_DIR = Path(__file__).parent.parent / "assets" / "fonts"
 # eq filter:         brightness/contrast adjustment
 # colorbalance:      push shadows toward blue/teal — CipherPulse brand aesthetic
 # vignette:          darken edges for cinematic framing (angle in radians)
-COLOR_BRIGHTNESS  = -0.08   # Darken overall exposure slightly
-COLOR_CONTRAST    =  1.20   # Lift blacks, add punch
-COLOR_RS          = -0.05   # Red in shadows (reduce)
-COLOR_GS          = -0.02   # Green in shadows (reduce slightly)
-COLOR_BS          =  0.08   # Blue in shadows (increase → teal tint)
-VIGNETTE_ANGLE    = "PI/5"  # ~36° — moderate dark edge falloff
+COLOR_BRIGHTNESS  = -0.02   # Very subtle darkening — visibility first
+COLOR_CONTRAST    =  1.20   # Keep punch without crushing blacks
+COLOR_RS          = -0.02   # Red in shadows (gentle reduction)
+COLOR_GS          = -0.01   # Green in shadows (minimal)
+COLOR_BS          =  0.04   # Blue in shadows (half-strength teal tint)
+VIGNETTE_ANGLE    = "PI/10" # ~18° — light edge falloff, half the previous strength
 
 # ── Clip sequencing ───────────────────────────────────────────────────────────
 # footage_downloader.py guarantees all clips are unique (no repeated Pexels IDs).
