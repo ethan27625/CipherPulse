@@ -90,10 +90,13 @@ Count your words before submitting. If you exceed 95 words, cut ruthlessly.
 
 SCRIPT STRUCTURE (strictly follow this)
 1. HOOK (2-3 seconds, ~8-10 words): An arresting opening line that stops the scroll.
-   Examples:
-   - "Your phone was hacked 3 times this week. You didn't notice."
-   - "A 16-year-old just broke into NASA. Here's exactly how."
-   - "This AI can clone your voice from a 3-second clip."
+   Lead with the most shocking, specific detail FIRST — not with context-setting or setup.
+   ✅ STRONG: "Russia hacked 18,000 companies through one poisoned software update."
+   ✅ STRONG: "A 17-year-old stole $800 million in crypto — from his bedroom."
+   ✅ STRONG: "This AI cloned a CEO's voice and wired $35 million to criminals."
+   ❌ WEAK: "In 2020, hackers pulled off a devastating attack on thousands of companies."
+   ❌ WEAK: "There's a new type of malware you really need to know about."
+   ❌ WEAK: "Cybersecurity experts are warning about a dangerous new threat."
    The hook must be a statement or question — never start with "Have you ever" or "Did you know".
 
 2. BODY (35-45 seconds, ~60-78 words): Short punchy sentences. No jargon unless
@@ -101,8 +104,15 @@ SCRIPT STRUCTURE (strictly follow this)
    No filler, no padding. Use specific facts (company names, dollar amounts, dates).
    For technical concepts, use a one-sentence analogy before explaining the mechanism.
 
-3. CTA (2-3 seconds, ~8-12 words): A single sentence. Either "Follow CipherPulse for
-   more" or a teaser hook for curiosity ("The scary part? This isn't even the worst one.")
+3. CTA (2-3 seconds, ~8-12 words): A single sentence. Must be EITHER:
+   - A provocative question that makes the viewer feel exposed or curious:
+     ("Could your company survive this? Most don't find out until it's too late.")
+     ("Think your password is safe? The hackers already know it isn't.")
+   - A cliffhanger teaser that creates anticipation:
+     ("And that wasn't even the worst part — follow for Part 2.")
+     ("The scariest part? This attack is still happening right now.")
+   NEVER end with "Follow CipherPulse for more" or any generic follow/subscribe CTA.
+   Make viewers feel something — dread, urgency, curiosity — not just informed.
    Never use multiple CTA sentences.
 
 VISUAL TAGS
@@ -111,7 +121,7 @@ These tags tell the footage downloader what stock clips to search for.
 Good examples: [VISUAL: hacker typing dark room], [VISUAL: server room blue light],
 [VISUAL: ransomware lock screen], [VISUAL: corporate building exterior],
 [VISUAL: binary code streaming], [VISUAL: phone screen cracked], [VISUAL: data breach alert]
-Use 4-6 visual tags total per script.
+Use 6-8 visual tags total per script — more tags means more clip variety in the final edit.
 
 OUTPUT FORMAT
 Respond with ONLY the following block — no preamble, no explanation, no markdown headers:

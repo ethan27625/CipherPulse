@@ -5,18 +5,20 @@ Takes visual tag keyword phrases from script_writer.py and returns local paths
 to downloaded MP4 clips, using a persistent category-based cache to avoid
 re-downloading clips across multiple video generations.
 
-Search strategy per tag:
-  1. Search Pexels with orientation=portrait (vertical, ideal for 9:16)
-  2. If no portrait clips found, search landscape (will be center-cropped by video_assembler)
-  3. If Pexels returns nothing at all, fall back to any cached clip in the matching category
-  4. If cache is also empty, use the generic 'dark-tech' fallback category
+3-phase search strategy to collect TARGET_CLIPS_PER_VIDEO unique clips:
+  Phase 1 — Primary:  one clip per [VISUAL] tag from the script
+  Phase 2 — Synonyms: additional searches using related terms for each tag's category
+  Phase 3 — Fallback: generic dark/tech terms to fill any remaining slots
+
+Within one video, NO clip is reused — each phase excludes Pexels IDs already
+selected, ensuring every segment of the finished video shows different footage.
 
 Each downloaded clip gets a .meta.json sidecar recording dimensions, orientation,
 pexels ID, and search term — used by video_assembler to decide crop strategy.
 
 Pexels free tier limits:
   - 200 requests/hour, 20,000 requests/month
-  - We use ~4-6 requests per video (one per visual tag), so ~3,000 videos/month before limits
+  - We use ~15-20 requests per video (phases 1-3), so ~800 videos/month before limits
 """
 
 from __future__ import annotations
@@ -109,6 +111,93 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
 }
 
 FALLBACK_CATEGORY = "dark-tech"
+
+# ── Target clip count ─────────────────────────────────────────────────────────
+# How many unique clips to collect per video. With ~54s of audio and 10 clips,
+# each clip fills ~5-6s. Increase for faster cuts, but each extra clip costs
+# one Pexels API request.
+TARGET_CLIPS_PER_VIDEO = 10
+
+# ── Synonym expansion ─────────────────────────────────────────────────────────
+# When Phase 1 (primary tags) doesn't yield TARGET_CLIPS_PER_VIDEO clips,
+# Phase 2 searches these related terms per category to find more unique footage.
+# Ordered from most-relevant to least — stops as soon as target is reached.
+CATEGORY_SYNONYMS: dict[str, list[str]] = {
+    "hacking": [
+        "cybersecurity hacker dark",
+        "computer security breach",
+        "cyber attack network",
+        "malware virus screen",
+        "dark web anonymous",
+    ],
+    "servers": [
+        "data center server room",
+        "server rack hardware",
+        "network infrastructure cables",
+        "cloud computing center",
+        "mainframe computer room",
+    ],
+    "code": [
+        "programmer coding dark screen",
+        "terminal command line screen",
+        "matrix binary code rain",
+        "software developer night",
+        "computer screen green code",
+    ],
+    "AI": [
+        "artificial intelligence technology",
+        "machine learning neural network",
+        "robot futuristic",
+        "deep learning algorithm",
+        "ai technology abstract",
+    ],
+    "city": [
+        "city lights night timelapse",
+        "urban skyline aerial night",
+        "downtown cityscape dark",
+        "night city street traffic",
+        "metropolitan city rain",
+    ],
+    "surveillance": [
+        "security camera cctv footage",
+        "facial recognition scan",
+        "surveillance monitoring room",
+        "security guard monitoring",
+        "cctv dark corridor",
+    ],
+    "data": [
+        "data analytics visualization",
+        "digital data stream network",
+        "database server abstract",
+        "big data network connections",
+        "data encryption security",
+    ],
+    "dark-tech": [
+        "technology dark background abstract",
+        "digital security cyber",
+        "cyber technology network dark",
+        "cybersecurity abstract blue",
+        "technology circuit glow",
+    ],
+}
+
+# ── Generic fallback search terms (Phase 3) ────────────────────────────────────
+# When Phases 1+2 still haven't reached TARGET_CLIPS_PER_VIDEO, these generic
+# dark/tech aesthetic terms are searched in order until the target is met.
+GENERIC_CLIP_TERMS: list[str] = [
+    "technology dark background",
+    "data center server room",
+    "network cables hardware",
+    "circuit board closeup",
+    "binary code screen",
+    "cybersecurity abstract dark",
+    "digital network connection",
+    "server room blue light",
+    "hacker dark room typing",
+    "surveillance camera street",
+    "encrypted data abstract",
+    "computer screen glow dark",
+]
 
 # Search queries to use when seeding the fallback category cache
 FALLBACK_SEARCH_TERMS = [
@@ -206,20 +295,46 @@ def _search_pexels_videos(
     return videos
 
 
-def _pick_best_video(videos: list[dict]) -> Optional[dict]:
+def _get_clip_id(clip_path: Path) -> Optional[int]:
+    """
+    Extract the Pexels video ID from a cached clip filename.
+
+    Clip filenames follow the pattern 'pexels-{id}.mp4'.
+    Returns None if the filename doesn't match this pattern (e.g. manually added clips).
+    """
+    try:
+        return int(clip_path.stem.split("-")[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def _pick_best_video(
+    videos: list[dict],
+    exclude_ids: Optional[set[int]] = None,
+) -> Optional[dict]:
     """
     Select the best video from Pexels search results.
 
     Selection criteria (in order):
     1. Duration within [MIN_CLIP_DURATION_SECONDS, MAX_CLIP_DURATION_SECONDS]
-    2. Prefer clips with width close to 1080 (full HD but not massive)
-    3. Among valid clips, prefer shorter duration (less storage, easier to trim)
+    2. Not already in exclude_ids (clips already chosen for this video)
+    3. Prefer clips with width close to 1080 (full HD but not massive)
+    4. Among valid clips, prefer shorter duration (less storage, easier to trim)
 
-    Returns None if no valid clip found after filtering.
+    Args:
+        videos:      Raw Pexels API result list
+        exclude_ids: Set of Pexels IDs already selected for this video.
+                     These are skipped so each video segment shows unique footage.
+
+    Returns None if no valid, non-excluded clip found.
     """
+    if exclude_ids is None:
+        exclude_ids = set()
+
     valid = [
         v for v in videos
-        if MIN_CLIP_DURATION_SECONDS <= v.get("duration", 0) <= MAX_CLIP_DURATION_SECONDS
+        if (MIN_CLIP_DURATION_SECONDS <= v.get("duration", 0) <= MAX_CLIP_DURATION_SECONDS
+            and v.get("id") not in exclude_ids)
     ]
     if not valid:
         return None
@@ -341,24 +456,33 @@ def is_already_cached(pexels_id: int, category: str) -> Optional[Path]:
 
 # ── Main download logic ────────────────────────────────────────────────────────
 
-def fetch_clip_for_tag(tag: str) -> Optional[Path]:
+def fetch_clip_for_tag(
+    tag: str,
+    exclude_ids: Optional[set[int]] = None,
+) -> Optional[Path]:
     """
     Fetch a single stock video clip for one visual tag keyword phrase.
 
     Full search strategy:
       1. Resolve tag → category (e.g. "hacker typing" → "hacking")
-      2. Search Pexels portrait orientation
-      3. If no portrait results → search landscape
-      4. If Pexels has results → check cache, download if needed
-      5. If Pexels has nothing → pick random cached clip from same category
-      6. If cache empty too → pick from FALLBACK_CATEGORY cache
+      2. Search Pexels portrait orientation, skipping IDs in exclude_ids
+      3. If no valid portrait results → search landscape
+      4. If Pexels has a valid result → check cache, download if needed
+      5. If Pexels has nothing → pick from category cache (excluding seen IDs)
+      6. Last resort → FALLBACK_CATEGORY cache (excluding seen IDs)
 
     Args:
-        tag: Visual tag string from script, e.g. "server room blue light"
+        tag:         Visual tag string from script, e.g. "server room blue light"
+        exclude_ids: Set of Pexels IDs already selected for this video.
+                     Clips with these IDs are skipped even if Pexels returns them,
+                     ensuring no footage appears twice in the same video.
 
     Returns:
         Path to a local MP4 file, or None if completely unable to find footage.
     """
+    if exclude_ids is None:
+        exclude_ids = set()
+
     category = resolve_category(tag)
     cat_dir = CACHE_DIR / category
     cat_dir.mkdir(parents=True, exist_ok=True)
@@ -373,90 +497,149 @@ def fetch_clip_for_tag(tag: str) -> Optional[Path]:
     except Exception as e:
         log.warning(f"Portrait search failed for '{tag}': {e}")
 
-    # ── Fall back to landscape if portrait returned nothing ────────────────────
-    if not videos:
+    # ── Fall back to landscape if portrait returned nothing valid ──────────────
+    if not _pick_best_video(videos, exclude_ids):
         try:
-            log.info(f"No portrait clips for '{tag}' — trying landscape")
-            videos = _search_pexels_videos(tag, orientation="landscape")
+            log.info(f"No valid portrait clips for '{tag}' — trying landscape")
+            landscape = _search_pexels_videos(tag, orientation="landscape")
             time.sleep(REQUEST_DELAY_SECONDS)
+            videos = videos + landscape  # combine — portrait preferred via sort
         except Exception as e:
             log.warning(f"Landscape search also failed for '{tag}': {e}")
 
-    # ── Pick best video and download if not cached ─────────────────────────────
-    if videos:
-        video = _pick_best_video(videos)
-        if video:
-            pexels_id = video.get("id")
-            cached = is_already_cached(pexels_id, category)
-            if cached:
-                log.info(f"Cache hit: {cached.name}")
-                return cached
+    # ── Pick best video (not in exclude_ids) and download if not cached ────────
+    video = _pick_best_video(videos, exclude_ids)
+    if video:
+        pexels_id = video.get("id")
+        cached = is_already_cached(pexels_id, category)
+        if cached:
+            log.info(f"Cache hit: {cached.name}")
+            return cached
 
-            video_file = _pick_video_file(video)
-            if video_file:
-                dest_path = cat_dir / f"pexels-{pexels_id}.mp4"
-                try:
-                    _download_clip(video_file["link"], dest_path)
-                    _save_meta(dest_path, video, video_file, tag)
-                    return dest_path
-                except Exception as e:
-                    log.error(f"Download failed for pexels-{pexels_id}: {e}")
-                    if dest_path.exists():
-                        dest_path.unlink()  # Remove partial download
+        video_file = _pick_video_file(video)
+        if video_file:
+            dest_path = cat_dir / f"pexels-{pexels_id}.mp4"
+            try:
+                _download_clip(video_file["link"], dest_path)
+                _save_meta(dest_path, video, video_file, tag)
+                return dest_path
+            except Exception as e:
+                log.error(f"Download failed for pexels-{pexels_id}: {e}")
+                if dest_path.exists():
+                    dest_path.unlink()  # Remove partial download
 
-    # ── Pexels returned nothing or download failed — use cache ─────────────────
+    # ── Pexels returned nothing valid — try category cache ─────────────────────
     log.warning(f"No Pexels results for '{tag}' — checking category cache")
-    cached_clips = get_cached_clips(category)
+    cached_clips = [c for c in get_cached_clips(category) if _get_clip_id(c) not in exclude_ids]
     if cached_clips:
-        chosen = cached_clips[0]  # Most recently downloaded
+        chosen = cached_clips[0]
         log.info(f"Using cached fallback: {chosen.name}")
         return chosen
 
-    # ── Last resort: try the generic fallback category ────────────────────────
+    # ── Last resort: FALLBACK_CATEGORY cache (excluding seen IDs) ─────────────
     if category != FALLBACK_CATEGORY:
         log.warning(f"Category '{category}' cache empty — using '{FALLBACK_CATEGORY}' fallback")
-        fallback_clips = get_cached_clips(FALLBACK_CATEGORY)
+        fallback_clips = [
+            c for c in get_cached_clips(FALLBACK_CATEGORY)
+            if _get_clip_id(c) not in exclude_ids
+        ]
         if fallback_clips:
             return fallback_clips[0]
 
-    log.error(f"No footage found for tag '{tag}' and cache is empty. Skipping.")
+    log.error(f"No footage found for tag '{tag}'. Skipping.")
     return None
 
 
 def fetch_clips_for_script(
     visual_tags: list[str],
-    max_clips: int = 6,
+    target_clips: int = TARGET_CLIPS_PER_VIDEO,
 ) -> list[Path]:
     """
-    Fetch video clips for a complete set of visual tags from one script.
+    Fetch enough unique video clips to fill an entire video with no repetition.
 
-    This is the primary entry point called by the orchestrator.
+    Uses a 3-phase strategy to reach target_clips unique clips:
+
+    Phase 1 — Primary tags:
+        One clip per [VISUAL] tag from the script. Each clip is guaranteed
+        unique (IDs tracked in seen_ids and excluded from subsequent searches).
+
+    Phase 2 — Synonym expansion:
+        For each tag's category, searches CATEGORY_SYNONYMS related terms to
+        find additional unique clips. Stops as soon as target_clips is reached.
+
+    Phase 3 — Generic fallbacks:
+        Searches GENERIC_CLIP_TERMS (dark/tech aesthetics) to fill any
+        remaining slots. These are visually consistent with the brand even
+        when the topic-specific searches ran dry.
 
     Args:
-        visual_tags: List of tag strings from Script.visual_tags
-        max_clips:   Cap the number of clips fetched (saves API quota and storage)
+        visual_tags:  List of tag strings from Script.visual_tags
+        target_clips: How many unique clips to collect (default TARGET_CLIPS_PER_VIDEO)
 
     Returns:
-        List of local MP4 file paths, one per tag (minus any that failed).
-        Order matches the input tags order so video_assembler can sequence clips.
-
-    Deduplication: if two tags map to the same category AND the same Pexels result,
-    we still include both paths in the list (they'll be the same file), because the
-    assembler needs one clip per visual tag slot. Having the same clip play twice
-    in a row is handled by the assembler's clip-repeat avoidance logic.
+        List of unique local MP4 paths. Length is min(target_clips, available_clips).
+        Every path in the list is a DIFFERENT Pexels clip — safe to display
+        sequentially with no visual repetition within the video.
     """
-    tags_to_fetch = visual_tags[:max_clips]
+    seen_ids: set[int] = set()
     clip_paths: list[Path] = []
 
-    for i, tag in enumerate(tags_to_fetch):
-        log.info(f"[{i+1}/{len(tags_to_fetch)}] Processing tag: '{tag}'")
-        path = fetch_clip_for_tag(tag)
-        if path:
-            clip_paths.append(path)
-        else:
-            log.warning(f"Skipping tag '{tag}' — no footage available")
+    def _try_fetch(tag: str) -> bool:
+        """Fetch one unique clip. Returns True if a new clip was added."""
+        if len(clip_paths) >= target_clips:
+            return False
+        path = fetch_clip_for_tag(tag, exclude_ids=seen_ids)
+        if path is None:
+            return False
+        pid = _get_clip_id(path)
+        if pid is not None and pid in seen_ids:
+            # Shouldn't happen (fetch_clip_for_tag respects exclude_ids) but guard
+            log.warning(f"Duplicate clip detected for '{tag}' — skipping")
+            return False
+        if pid is not None:
+            seen_ids.add(pid)
+        clip_paths.append(path)
+        return True
 
-    log.info(f"Clips fetched: {len(clip_paths)}/{len(tags_to_fetch)}")
+    # ── Phase 1: One clip per visual tag from the script ───────────────────────
+    log.info(f"Phase 1 — primary tags: fetching clips for {len(visual_tags)} visual tag(s)")
+    for i, tag in enumerate(visual_tags):
+        log.info(f"  [{i + 1}/{len(visual_tags)}] '{tag}'")
+        _try_fetch(tag)
+        if len(clip_paths) >= target_clips:
+            break
+
+    # ── Phase 2: Synonym expansion per category ────────────────────────────────
+    if len(clip_paths) < target_clips:
+        log.info(
+            f"Phase 2 — synonyms: have {len(clip_paths)}/{target_clips} clips, "
+            f"searching related terms"
+        )
+        for tag in visual_tags:
+            if len(clip_paths) >= target_clips:
+                break
+            category = resolve_category(tag)
+            for synonym in CATEGORY_SYNONYMS.get(category, []):
+                if len(clip_paths) >= target_clips:
+                    break
+                log.info(f"  synonym '{synonym}' (from tag '{tag}' → '{category}')")
+                _try_fetch(synonym)
+
+    # ── Phase 3: Generic dark/tech fallbacks ──────────────────────────────────
+    if len(clip_paths) < target_clips:
+        log.info(
+            f"Phase 3 — generic fallbacks: have {len(clip_paths)}/{target_clips} clips"
+        )
+        for fallback in GENERIC_CLIP_TERMS:
+            if len(clip_paths) >= target_clips:
+                break
+            log.info(f"  fallback: '{fallback}'")
+            _try_fetch(fallback)
+
+    log.info(
+        f"Footage ready: {len(clip_paths)} unique clips "
+        f"(target was {target_clips}) — no clip appears twice"
+    )
     return clip_paths
 
 

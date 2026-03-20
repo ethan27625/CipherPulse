@@ -10,43 +10,43 @@
     "id": 2,
     "topic": "SolarWinds Supply Chain Attack: How Russia Hacked the US Government",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-19"
   },
   {
     "id": 3,
     "topic": "Colonial Pipeline Ransomware: How Hackers Shut Down US Fuel Supply",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 4,
     "topic": "WannaCry: The Ransomware That Infected 200,000 Computers in 150 Countries",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 5,
     "topic": "Stuxnet: The World's First Cyberweapon That Destroyed Physical Machines",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 6,
     "topic": "The Yahoo Breach: 3 Billion Accounts Stolen and Hidden for Years",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 7,
     "topic": "Target 2013: How Hackers Stole 40 Million Credit Cards Through an HVAC Vendor",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-20"
   },
   {
     "id": 8,

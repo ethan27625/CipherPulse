@@ -1,15 +1,17 @@
 """
 video_assembler.py — FFmpeg-based video assembly pipeline.
 
-Combines stock footage clips, voiceover audio, SRT subtitles, and optional
-background music into a finished 1080×1920 MP4 ready for platform upload.
+Combines stock footage clips, voiceover audio, ASS karaoke subtitles, and
+optional background music into a finished 1080×1920 MP4 ready for upload.
 
 Pipeline stages (all handled in a single FFmpeg invocation):
-  1. NORMALIZE  — scale/crop each clip to exactly 1080×1920, 30fps, yuv420p
-  2. TRIM       — cut each clip to its time slot (voiceover_duration / n_clips)
-  3. CONCAT     — join all clips into one continuous video stream
-  4. SUBTITLES  — burn SRT captions via libass (large bold text, middle of frame)
-  5. AUDIO MIX  — voiceover at full volume + music track at 17% volume
+  1. SCALE        — scale each clip 5% oversized (1134×2016) to create pan room
+  2. DRIFT PAN    — slow horizontal drift via crop with time expression (alternates L↔R)
+  3. COLOR GRADE  — dark cinematic look: eq brightness/contrast + colorbalance
+  4. VIGNETTE     — dark edges for cinematic framing
+  5. CONCAT       — join clips (cycled to hit TARGET_CLIP_DURATION per cut)
+  6. SUBTITLES    — burn ASS karaoke captions via libass (lower third, cyan highlight)
+  7. AUDIO MIX    — voiceover at full volume + music track at 22% volume
 
 Key design decisions:
   - Uses -stream_loop -1 on all video inputs so short clips loop to fill their slot
@@ -51,38 +53,43 @@ VIDEO_FPS = 30
 VIDEO_CRF = 23          # H.264 quality: 18=near-lossless, 23=great, 28=lower quality
 VIDEO_PRESET = "fast"   # Encoding speed vs. compression: ultrafast→veryslow
 AUDIO_BITRATE = "192k"  # AAC audio bitrate — 192k is transparent for speech+music
-MUSIC_VOLUME = 0.17     # Background music at 17% of voiceover volume
+MUSIC_VOLUME = 0.22     # Background music at 22% of voiceover volume
 
 MUSIC_DIR = Path(__file__).parent.parent / "assets" / "music"
+FONTS_DIR = Path(__file__).parent.parent / "assets" / "fonts"
 
-# ── ASS subtitle style ────────────────────────────────────────────────────────
-# force_style overrides the default SRT→ASS conversion styling.
-# ASS color format: &HAABBGGRR  (alpha, blue, green, red — reversed from HTML)
-#   White:  &H00FFFFFF
-#   Black:  &H00000000
-#
-# Alignment uses numpad layout (ASS v4+ spec):
-#   7 8 9       top-left, top-center, top-right
-#   4 5 6       mid-left, mid-center, mid-right   ← we use 5 (middle center)
-#   1 2 3       bot-left, bot-center, bot-right
-#
-# FontSize=72 at 1080px width is large and readable on a phone screen.
-# Outline=3 gives a thick black border that keeps white text legible on any bg.
-# Shadow=2 adds a drop shadow for depth on dark backgrounds.
+# ── Dark cinematic color grade ────────────────────────────────────────────────
+# Applied to every footage clip before concat.
+# eq filter:         brightness/contrast adjustment
+# colorbalance:      push shadows toward blue/teal — CipherPulse brand aesthetic
+# vignette:          darken edges for cinematic framing (angle in radians)
+COLOR_BRIGHTNESS  = -0.08   # Darken overall exposure slightly
+COLOR_CONTRAST    =  1.20   # Lift blacks, add punch
+COLOR_RS          = -0.05   # Red in shadows (reduce)
+COLOR_GS          = -0.02   # Green in shadows (reduce slightly)
+COLOR_BS          =  0.08   # Blue in shadows (increase → teal tint)
+VIGNETTE_ANGLE    = "PI/5"  # ~36° — moderate dark edge falloff
 
-SUBTITLE_STYLE = (
-    "FontName=Arial,"
-    "FontSize=72,"
-    "Bold=1,"
-    "PrimaryColour=&H00FFFFFF,"   # white text
-    "OutlineColour=&H00000000,"   # black outline
-    "BackColour=&H80000000,"      # 50% transparent black shadow background
-    "BorderStyle=1,"              # 1=outline+shadow (not opaque box)
-    "Outline=3,"
-    "Shadow=2,"
-    "Alignment=5,"                # middle center of frame
-    "MarginV=0"                   # no vertical offset from true center
-)
+# ── Clip sequencing ───────────────────────────────────────────────────────────
+# footage_downloader.py guarantees all clips are unique (no repeated Pexels IDs).
+# video_assembler uses EVERY clip exactly once — no cycling, no repetition.
+# With 10 unique clips and ~54s of audio: ~5-6s per clip.
+# For shorter cuts, increase TARGET_CLIPS_PER_VIDEO in footage_downloader.py.
+
+# ── Cinematic drift pan ───────────────────────────────────────────────────────
+# Each clip is scaled 5% larger than the output frame, then slowly panned
+# horizontally using a time-expression on FFmpeg's crop filter.
+# Even-indexed segments drift left→right; odd-indexed drift right→left.
+# When the same source clip appears twice, opposite pan directions make it
+# look like different footage. No zoompan — no zoom-and-hold artifacts.
+#
+# Scale math:
+#   SCALE_W = 1080 * 1.05 = 1134  → 54px of horizontal slack (PAN_SLACK_X)
+#   SCALE_H = 1920 * 1.05 = 2016  → 96px of vertical slack, centered at y=48
+SCALE_W      = int(VIDEO_WIDTH  * 1.05)  # 1134 — source scale width
+SCALE_H      = int(VIDEO_HEIGHT * 1.05)  # 2016 — source scale height
+PAN_SLACK_X  = SCALE_W - VIDEO_WIDTH     # 54px — full horizontal drift range
+PAN_CENTER_Y = (SCALE_H - VIDEO_HEIGHT) // 2  # 48px — keep crop centered vertically
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -166,7 +173,7 @@ def _escape_filter_path(path: Path) -> str:
 def _build_filter_complex(
     n_clips: int,
     seg_duration: float,
-    srt_path: Path,
+    subtitle_path: Path,
     voice_index: int,
     music_index: Optional[int],
 ) -> tuple[str, str, str]:
@@ -174,75 +181,82 @@ def _build_filter_complex(
     Build the FFmpeg -filter_complex string for the full pipeline.
 
     Args:
-        n_clips:      Number of video clip inputs (indices 0..n_clips-1)
-        seg_duration: Duration in seconds each clip should fill
-        srt_path:     Path to the SRT subtitle file
-        voice_index:  FFmpeg input index for the voiceover MP3
-        music_index:  FFmpeg input index for the music track (None if no music)
+        n_clips:       Number of video clip inputs (indices 0..n_clips-1)
+        seg_duration:  Duration in seconds each clip should fill
+        subtitle_path: Path to the ASS subtitle file (karaoke style)
+        voice_index:   FFmpeg input index for the voiceover MP3
+        music_index:   FFmpeg input index for the music track (None if no music)
 
     Returns:
         Tuple of (filter_complex_string, video_map_label, audio_map_label)
-        The map labels are used in the -map flags of the final FFmpeg command.
 
-    Filter graph breakdown:
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │ For each clip i:                                                    │
-    │   [i:v] → trim → setpts → scale → crop → setsar → fps → fmt [vi]  │
-    │                                                                     │
-    │ [v0][v1]...[vN] → concat → [vcat]                                  │
-    │                                                                     │
-    │ [vcat] → subtitles → [vout]                                         │
-    │                                                                     │
-    │ [voice_idx:a] ─────────────────────────────────┐                   │
-    │                                                 ├→ amix → [aout]   │
-    │ [music_idx:a] → aloop → volume ─────────────────┘                  │
-    └─────────────────────────────────────────────────────────────────────┘
+    Filter graph per clip:
+      trim → setpts → scale(5% oversized) → fps → crop(drift pan) → setsar
+        → eq (brightness/contrast)
+        → colorbalance (blue/teal shadow tint)
+        → vignette (dark edge falloff)
+        → format=yuv420p
+
+    The drift pan works by scaling each clip to SCALE_W×SCALE_H (5% larger than
+    the output), then using a time-expression on the crop x-offset to slowly pan
+    the 1080×1920 window across the source. Even clips pan left→right, odd clips
+    pan right→left. When the same source clip appears twice due to cycling, the
+    reversed direction makes it read as different footage.
+
+    Then: concat → subtitles (ASS karaoke, lower third) → [vout]
     """
     parts: list[str] = []
     seg = f"{seg_duration:.3f}"
 
-    # ── Stage 1 & 2: Normalize + trim each clip ────────────────────────────
-    # Explanation of each filter:
-    #   trim=0:SEC        → take only the first SEC seconds (clips loop via stream_loop)
-    #   setpts=PTS-STARTPTS → reset timestamps to start at 0 (required after trim)
-    #   scale=W:H:force_original_aspect_ratio=increase
-    #                     → scale up until BOTH dimensions meet or exceed W×H,
-    #                       preserving aspect ratio. Portrait clips scale exactly;
-    #                       landscape clips overshoot in width → then we crop.
-    #   crop=W:H          → center-crop to exactly W×H (removes excess from landscape)
-    #   setsar=1          → set Sample Aspect Ratio to 1:1 (square pixels)
-    #                       Some cameras record non-square pixels; this normalizes.
-    #   fps=FPS           → enforce consistent frame rate across all clips
-    #   format=yuv420p    → convert to standard 4:2:0 chroma subsampling —
-    #                       required for maximum compatibility with H.264 decoders
-    #                       and all platforms (YouTube, TikTok, Instagram).
+    # ── Per-clip: scale (oversized) → fps → drift pan → color grade ────────
+    #
+    # Scale to SCALE_W×SCALE_H (5% larger) so there's PAN_SLACK_X=54px of
+    # horizontal room for the pan without revealing black borders.
+    #
+    # fps before crop: normalise frame rate so `t` in the crop expression
+    # increments cleanly at 1/30s intervals. (Without this, variable-rate
+    # input can make `t` jump unevenly and produce a jerky pan.)
+    #
+    # crop x expression: `t/{seg}` goes 0→1 over the clip duration.
+    #   even (left→right): x = PAN_SLACK_X * t/seg
+    #   odd  (right→left): x = PAN_SLACK_X * (1 - t/seg)
+    # No clamp needed — trim guarantees t stays in [0, seg].
+    #
+    # Color operations happen BEFORE format=yuv420p so they work in RGB space.
 
     for i in range(n_clips):
+        # trim guarantees t stays in [0, seg], so no clamp needed.
+        if i % 2 == 0:
+            x_expr = f"{PAN_SLACK_X}*t/{seg}"        # left → right
+        else:
+            x_expr = f"{PAN_SLACK_X}*(1-t/{seg})"   # right → left
+
         parts.append(
             f"[{i}:v]"
             f"trim=0:{seg},setpts=PTS-STARTPTS,"
-            f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=increase,"
-            f"crop={VIDEO_WIDTH}:{VIDEO_HEIGHT},"
-            f"setsar=1,"
+            f"scale={SCALE_W}:{SCALE_H}:force_original_aspect_ratio=increase,"
             f"fps={VIDEO_FPS},"
+            f"crop={VIDEO_WIDTH}:{VIDEO_HEIGHT}:x='{x_expr}':y={PAN_CENTER_Y},"
+            f"setsar=1,"
+            f"eq=brightness={COLOR_BRIGHTNESS}:contrast={COLOR_CONTRAST},"
+            f"colorbalance=rs={COLOR_RS}:gs={COLOR_GS}:bs={COLOR_BS},"
+            f"vignette=angle={VIGNETTE_ANGLE},"
             f"format=yuv420p"
             f"[v{i}]"
         )
 
-    # ── Stage 3: Concatenate all normalized clips ──────────────────────────
-    # concat filter: n=number of segments, v=1 video stream, a=0 audio streams
-    # We handle audio separately, so a=0. The filter joins [v0][v1]...[vN]
-    # into one continuous stream in order, producing [vcat].
+    # ── Concatenate all clips ──────────────────────────────────────────────
     concat_inputs = "".join(f"[v{i}]" for i in range(n_clips))
     parts.append(f"{concat_inputs}concat=n={n_clips}:v=1:a=0[vcat]")
 
-    # ── Stage 4: Burn subtitles ────────────────────────────────────────────
-    # subtitles filter uses libass to render SRT/ASS captions onto the video.
-    # force_style= overrides the default styling with our CipherPulse style.
-    # The path must be escaped because : is a filter option separator.
-    srt_escaped = _escape_filter_path(srt_path)
+    # ── Burn ASS karaoke subtitles ─────────────────────────────────────────
+    # The ASS file contains all styling (font, size, color, position, karaoke).
+    # fontsdir tells libass where to find our Oswald font.
+    # No force_style needed — ASS embeds its own [V4+ Styles] section.
+    sub_escaped   = _escape_filter_path(subtitle_path)
+    fonts_escaped = _escape_filter_path(FONTS_DIR)
     parts.append(
-        f"[vcat]subtitles='{srt_escaped}':force_style='{SUBTITLE_STYLE}'[vout]"
+        f"[vcat]subtitles='{sub_escaped}':fontsdir='{fonts_escaped}'[vout]"
     )
 
     # ── Stage 5: Audio mixing ──────────────────────────────────────────────
@@ -329,7 +343,7 @@ def _run_ffmpeg(cmd: list[str]) -> None:
 def assemble_video(
     clip_paths: list[Path],
     voiceover_path: Path,
-    srt_path: Path,
+    srt_path: Path,          # accepts .ass or .srt (named srt_path for backward compat)
     output_dir: Path,
     music_track: Optional[Path] = None,
 ) -> Path:
@@ -337,9 +351,11 @@ def assemble_video(
     Assemble a finished CipherPulse Short from its component files.
 
     Args:
-        clip_paths:     Ordered list of stock footage MP4 paths from footage_downloader
+        clip_paths:     Ordered list of UNIQUE stock footage MP4 paths from footage_downloader.
+                        Every path must be a different clip — no duplicates.
+                        footage_downloader.fetch_clips_for_script() guarantees this.
         voiceover_path: Path to voiceover.mp3 from voice_generator
-        srt_path:       Path to subtitles.srt from voice_generator
+        srt_path:       Path to subtitles.ass from voice_generator (accepts .srt too)
         output_dir:     Directory to write video.mp4 into
         music_track:    Optional path to background music. If None, auto-selects
                         from assets/music/ (or produces voice-only if empty).
@@ -366,13 +382,15 @@ def assemble_video(
     from mutagen.mp3 import MP3
     voice_duration = MP3(str(voiceover_path)).info.length
     log.info(f"Voiceover duration: {voice_duration:.2f}s")
-    log.info(f"Clips to use: {len(clip_paths)}")
 
-    # ── Calculate per-clip segment duration ───────────────────────────────
-    # Distribute voiceover time evenly across clips.
-    # Add a small buffer (0.5s) so the last clip doesn't cut off early.
-    seg_duration = (voice_duration + 0.5) / len(clip_paths)
-    log.info(f"Segment duration per clip: {seg_duration:.2f}s")
+    # ── Distribute clips evenly across the voiceover ───────────────────────
+    # footage_downloader guarantees every clip is unique — use them all once.
+    # Each clip gets an equal share of the total duration.
+    # (voice_duration + 0.5) adds a 0.5s buffer so the last clip doesn't
+    # cut off a syllable right at the tail of the audio.
+    n_clips = len(clip_paths)
+    seg_duration = (voice_duration + 0.5) / n_clips
+    log.info(f"Using {n_clips} unique clips — {seg_duration:.2f}s each")
 
     # ── Resolve music track ────────────────────────────────────────────────
     if music_track is None:
@@ -380,12 +398,11 @@ def assemble_video(
 
     # ── Build FFmpeg input list ────────────────────────────────────────────
     # Input order matters for index references in filter_complex:
-    #   0..n-1  : video clip files (stream_loop -1 for looping)
+    #   0..n-1  : video clip files (stream_loop -1 lets short clips fill their slot)
     #   n       : voiceover MP3
     #   n+1     : music track (if present)
     cmd: list[str] = ["ffmpeg", "-y"]  # -y = overwrite output without asking
 
-    # Add all clip inputs with stream_loop so short clips can fill longer slots
     for clip_path in clip_paths:
         cmd.extend(["-stream_loop", "-1", "-i", str(clip_path)])
 
@@ -393,17 +410,17 @@ def assemble_video(
     cmd.extend(["-i", str(voiceover_path)])
 
     # Music track (stream_loop so short tracks fill the whole voiceover)
-    voice_index = len(clip_paths)
+    voice_index = n_clips
     music_index: Optional[int] = None
     if music_track and music_track.exists():
         cmd.extend(["-stream_loop", "-1", "-i", str(music_track)])
-        music_index = len(clip_paths) + 1
+        music_index = n_clips + 1
 
     # ── Build filter complex ───────────────────────────────────────────────
     filter_complex, video_map, audio_map = _build_filter_complex(
-        n_clips=len(clip_paths),
+        n_clips=n_clips,
         seg_duration=seg_duration,
-        srt_path=srt_path,
+        subtitle_path=srt_path,   # srt_path is now the .ass file
         voice_index=voice_index,
         music_index=music_index,
     )

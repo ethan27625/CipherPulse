@@ -181,7 +181,7 @@ def run_pipeline(
         video_path = assemble_video(
             clip_paths=clips,
             voiceover_path=voice.mp3_path,
-            srt_path=voice.srt_path,
+            srt_path=voice.subtitle_path,
             output_dir=out_dir,
         )
         record["video"] = {"path": str(video_path), "size_mb": video_path.stat().st_size / 1e6}

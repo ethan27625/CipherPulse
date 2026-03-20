@@ -1,15 +1,18 @@
-"""
+r"""
 voice_generator.py — Text-to-speech voiceover and subtitle generator.
 
 Converts a CipherPulse script into:
-  - voiceover.mp3  : narration audio using Microsoft Edge-TTS (free, no API key)
-  - subtitles.srt  : word-timed subtitle file for FFmpeg caption burning
+  - voiceover.mp3   : narration audio using Microsoft Edge-TTS (free, no API key)
+  - subtitles.ass   : ASS subtitle file with per-word karaoke timing for FFmpeg
 
-Voice: en-US-GuyNeural — deep, authoritative male voice
-Settings: rate=-8% (slightly slower for dramatic delivery), pitch=-3Hz
+Voice: en-US-AndrewMultilingualNeural — warm, confident, authentic delivery
+Settings: rate=-5% (natural pace), pitch=-1Hz (slight depth without artificiality)
 
-The SRT file groups words into 5-6 word caption chunks so the final video
-displays large, readable text lines rather than one word at a time.
+The ASS file uses {\kf} karaoke tags so each word sweeps from white → cyan
+as it is spoken, producing the high-retention caption style used by top Shorts.
+Groups of ASS_WORDS_PER_LINE (6) words are shown at a time, positioned in the
+lower third of the frame (80% from top) with a semi-transparent dark box.
+Font size 72 (down from 84) accommodates the longer phrases without overflow.
 
 Edge-TTS uses asyncio internally. All async functions are wrapped by the
 public synchronous API (generate_voiceover) so callers don't need to
@@ -45,12 +48,13 @@ logging.basicConfig(
 log = logging.getLogger("voice_generator")
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-VOICE = "en-US-GuyNeural"
-RATE = "-8%"               # Slightly slower than default — more dramatic delivery
-PITCH = "-3Hz"             # Slightly lower pitch — deeper, authoritative tone
+VOICE = "en-US-AndrewMultilingualNeural"  # Warm, confident, authentic (News/Copilot)
+# Alternative: "en-US-ChristopherNeural" — Reliable, Authority (News/Novel)
+RATE  = "-5%"              # Natural pace — less robotic than -8%
+PITCH = "-1Hz"             # Subtle depth — avoids the artificial "deepened" sound
 MAX_DURATION_SECONDS = 58  # Hard ceiling for Shorts
-WORDS_PER_CAPTION = 5      # Words grouped per subtitle caption line
-MIN_CUE_DURATION_MS = 800  # Minimum caption display time in milliseconds
+ASS_WORDS_PER_LINE   = 6   # Words shown simultaneously in karaoke captions
+MIN_CUE_DURATION_MS  = 800 # Minimum caption display time in milliseconds
 
 
 # ── Data structures ────────────────────────────────────────────────────────────
@@ -65,11 +69,11 @@ class WordEvent:
 @dataclass
 class VoiceResult:
     """All outputs from a voice generation run."""
-    mp3_path: Path
-    srt_path: Path
+    mp3_path:        Path
+    subtitle_path:   Path   # .ass file with karaoke timing (was srt_path)
     duration_seconds: float
-    word_count: int
-    caption_count: int
+    word_count:      int
+    caption_count:   int
 
     def is_valid_duration(self) -> bool:
         return self.duration_seconds <= MAX_DURATION_SECONDS
@@ -82,75 +86,108 @@ class VoiceResult:
         )
 
 
-# ── SRT formatting helpers ────────────────────────────────────────────────────
+# ── ASS subtitle helpers ──────────────────────────────────────────────────────
 
-def _ms_to_srt_time(ms: int) -> str:
+def _ms_to_ass_time(ms: int) -> str:
     """
-    Convert milliseconds to SRT timecode format: HH:MM:SS,mmm
+    Convert milliseconds to ASS timecode: H:MM:SS.cc  (centiseconds, not millis)
 
-    SRT uses a comma (not a dot) before milliseconds — this is a quirk of the
-    format spec that trips up a lot of implementations. FFmpeg is strict about
-    this when parsing subtitle files.
-
-    Example: 3750 ms → "00:00:03,750"
+    ASS uses centiseconds (1/100s) not milliseconds before the decimal.
+    Example: 3750 ms → "0:00:03.75"
     """
-    hours = ms // 3_600_000
-    ms %= 3_600_000
-    minutes = ms // 60_000
-    ms %= 60_000
-    seconds = ms // 1_000
-    millis = ms % 1_000
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
+    cs = (ms % 1_000) // 10
+    s  = (ms // 1_000) % 60
+    m  = (ms // 60_000) % 60
+    h  =  ms // 3_600_000
+    return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
 
-def _build_srt(word_events: list[WordEvent], total_duration_ms: int) -> str:
+def _build_ass(word_events: list[WordEvent], total_duration_ms: int) -> str:
     """
-    Group word events into caption cues and format as an SRT string.
+    Build an ASS subtitle file with per-word karaoke highlighting.
 
-    Grouping strategy:
-    - Collect WORDS_PER_CAPTION words per cue
-    - Each cue starts at the first word's timestamp
-    - Each cue ends at the next cue's start (or total_duration_ms for the last)
-    - Enforce MIN_CUE_DURATION_MS so fast-spoken words don't flash imperceptibly
+    Each dialogue line shows ASS_WORDS_PER_LINE words. The karaoke tag (backslash-kf)
+    causes each word to sweep from SecondaryColour (white = upcoming) to
+    PrimaryColour (cyan = spoken) over cs centiseconds as the voice reaches it.
 
-    Why 5 words per caption for Shorts?
-    Large bold text in the middle of a vertical 9:16 frame can only fit ~5-6
-    words comfortably at a font size readable on a phone screen. Shorter chunks
-    also pace better with the speech rhythm, matching what the viewer hears to
-    what they read with minimal lag.
+    ASS colour format: &HAABBGGRR  (alpha, blue, green, red — reversed from HTML)
+      Cyan  #00F2EA → R=0x00 G=0xF2 B=0xEA → BGR: EA F2 00 → &H00EAF200
+      White #FFFFFF → &H00FFFFFF
+      Black #000000 → &H00000000
+      Box   60% opaque black  → alpha=0x99 → &H99000000
+
+    Positioning:
+      Alignment=2 (bottom-center) + MarginV=400 places text 400px from the
+      bottom of the 1920px frame → 1520px from top → 79% down (lower third).
+
+    BorderStyle=3 draws an opaque box behind each line using BackColour.
+    Outline=0 removes the text outline (the box handles contrast).
     """
     if not word_events:
         return ""
 
-    # Split word_events into chunks of WORDS_PER_CAPTION
-    chunks: list[list[WordEvent]] = []
-    for i in range(0, len(word_events), WORDS_PER_CAPTION):
-        chunk = word_events[i : i + WORDS_PER_CAPTION]
-        if chunk:
-            chunks.append(chunk)
+    # ASS colour constants
+    CYAN_ASS  = "&H00EAF200"   # Cyan #00F2EA — active/current word
+    WHITE_ASS = "&H00FFFFFF"   # White — upcoming words
+    BLACK_ASS = "&H00000000"   # Black outline (unused with BorderStyle=3)
+    BOX_ASS   = "&H99000000"   # 60% opaque black background box
 
-    srt_blocks: list[str] = []
+    header = (
+        "[Script Info]\n"
+        "ScriptType: v4.00+\n"
+        "PlayResX: 1080\n"
+        "PlayResY: 1920\n"
+        "ScaledBorderAndShadow: yes\n"
+        "WrapStyle: 0\n"
+        "\n"
+        "[V4+ Styles]\n"
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
+        "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
+        "Alignment, MarginL, MarginR, MarginV, Encoding\n"
+        f"Style: Default,Oswald,72,{CYAN_ASS},{WHITE_ASS},{BLACK_ASS},{BOX_ASS},"
+        "-1,0,0,0,100,100,3,0,3,0,0,2,80,80,400,1\n"
+        "\n"
+        "[Events]\n"
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+    )
 
-    for idx, chunk in enumerate(chunks):
+    dialogue_lines: list[str] = []
+    n = len(word_events)
+
+    for i in range(0, n, ASS_WORDS_PER_LINE):
+        chunk = word_events[i : i + ASS_WORDS_PER_LINE]
+        if not chunk:
+            continue
+
         start_ms = chunk[0].start_ms
 
-        # End time = next chunk's start, or total duration for last chunk
-        if idx + 1 < len(chunks):
-            end_ms = chunks[idx + 1][0].start_ms
-        else:
-            end_ms = total_duration_ms
+        # End time: next chunk's first word, or end of audio
+        next_idx = i + ASS_WORDS_PER_LINE
+        end_ms = word_events[next_idx].start_ms if next_idx < n else total_duration_ms
+        end_ms = max(end_ms, start_ms + MIN_CUE_DURATION_MS)
 
-        # Enforce minimum display time
-        if end_ms - start_ms < MIN_CUE_DURATION_MS:
-            end_ms = start_ms + MIN_CUE_DURATION_MS
+        # Build karaoke text: {\kf<cs>}word for each word in chunk
+        # The space between {\kf}word fragments is correct ASS karaoke syntax.
+        text_parts: list[str] = []
+        for j, we in enumerate(chunk):
+            # Duration this word is "active" = until next word starts
+            if j + 1 < len(chunk):
+                dur_ms = chunk[j + 1].start_ms - we.start_ms
+            else:
+                dur_ms = end_ms - we.start_ms
+            dur_cs = max(5, dur_ms // 10)   # centiseconds, minimum 0.05s
+            text_parts.append(f"{{\\kf{dur_cs}}}{we.word}")
 
-        caption_text = " ".join(w.word for w in chunk)
-        start_tc = _ms_to_srt_time(start_ms)
-        end_tc = _ms_to_srt_time(end_ms)
+        text     = " ".join(text_parts)
+        start_tc = _ms_to_ass_time(start_ms)
+        end_tc   = _ms_to_ass_time(end_ms)
 
-        srt_blocks.append(f"{idx + 1}\n{start_tc} --> {end_tc}\n{caption_text}")
+        dialogue_lines.append(
+            f"Dialogue: 0,{start_tc},{end_tc},Default,,0,0,0,,{text}"
+        )
 
-    return "\n\n".join(srt_blocks) + "\n"
+    return header + "\n".join(dialogue_lines) + "\n"
 
 
 # ── Core async generation ──────────────────────────────────────────────────────
@@ -158,7 +195,6 @@ def _build_srt(word_events: list[WordEvent], total_duration_ms: int) -> str:
 async def _synthesize(
     text: str,
     mp3_path: Path,
-    srt_path: Path,
 ) -> list[WordEvent]:
     """
     Run Edge-TTS synthesis and derive word-level timing from sentence boundaries.
@@ -227,36 +263,36 @@ async def _generate_async(
     output_dir: Path,
 ) -> VoiceResult:
     """
-    Async orchestrator: synthesize audio, build SRT, measure duration.
+    Async orchestrator: synthesize audio, build ASS karaoke subtitles, measure duration.
 
     Returns a VoiceResult with paths to both output files and metadata.
     """
-    mp3_path = output_dir / "voiceover.mp3"
-    srt_path = output_dir / "subtitles.srt"
+    mp3_path      = output_dir / "voiceover.mp3"
+    subtitle_path = output_dir / "subtitles.ass"
 
     log.info(f"Starting synthesis — voice={VOICE} rate={RATE} pitch={PITCH}")
     log.info(f"Script length: {len(text.split())} words")
 
-    word_events = await _synthesize(text, mp3_path, srt_path)
+    word_events = await _synthesize(text, mp3_path)
 
     # Measure real audio duration using mutagen
-    # mutagen reads the MP3 header metadata — far more accurate than word count
     audio = MP3(str(mp3_path))
-    duration_seconds = audio.info.length
+    duration_seconds  = audio.info.length
     total_duration_ms = int(duration_seconds * 1000)
 
     log.info(f"Real audio duration: {duration_seconds:.2f}s")
     log.info(f"Word boundary events captured: {len(word_events)}")
 
-    # Build and write SRT
-    srt_content = _build_srt(word_events, total_duration_ms)
-    srt_path.write_text(srt_content, encoding="utf-8")
-    caption_count = srt_content.count("\n\n") + 1 if srt_content.strip() else 0
-    log.info(f"SRT written: {srt_path} ({caption_count} captions)")
+    # Build and write ASS karaoke subtitle file
+    ass_content   = _build_ass(word_events, total_duration_ms)
+    subtitle_path.write_text(ass_content, encoding="utf-8")
+    # Count Dialogue lines = number of caption groups
+    caption_count = ass_content.count("\nDialogue:")
+    log.info(f"ASS written: {subtitle_path} ({caption_count} caption groups)")
 
     return VoiceResult(
         mp3_path=mp3_path,
-        srt_path=srt_path,
+        subtitle_path=subtitle_path,
         duration_seconds=duration_seconds,
         word_count=len(word_events),
         caption_count=caption_count,
@@ -377,7 +413,7 @@ if __name__ == "__main__":
     print(f"RESULT: {result.summary()}")
     print(f"{'═' * 55}")
     print(f"  MP3:      {result.mp3_path}")
-    print(f"  SRT:      {result.srt_path}")
+    print(f"  ASS:      {result.subtitle_path}")
     print(f"  Duration: {result.duration_seconds:.2f}s")
     print(f"  Words:    {result.word_count}")
     print(f"  Captions: {result.caption_count}")
@@ -388,9 +424,8 @@ if __name__ == "__main__":
     else:
         print(f"\n✅  Duration valid — ready for video_assembler.")
 
-    # Print first 10 caption cues so we can visually verify timing
-    print(f"\n── First 10 SRT cues ──────────────────────────────────")
-    srt_lines = result.srt_path.read_text().strip().split("\n\n")
-    for cue in srt_lines[:10]:
-        print(cue)
-        print()
+    # Print first 10 dialogue lines so we can visually verify timing
+    print(f"\n── First 10 ASS dialogue lines ──────────────────────────")
+    ass_lines = [l for l in result.subtitle_path.read_text().splitlines() if l.startswith("Dialogue:")]
+    for line in ass_lines[:10]:
+        print(line)
