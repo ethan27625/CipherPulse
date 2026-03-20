@@ -455,11 +455,23 @@ Examples:
     log.info(f"CipherPulse — {mode_label} — producing {args.count} Short(s)")
     log.info("═" * 60)
 
+    # When producing multiple videos, auto-schedule them across coming days
+    # (3 slots/day: 8AM, 2PM, 8PM EST) instead of publishing all immediately.
+    # A manual --publish-at override bypasses this and applies to every video.
+    publish_schedule: list[str] = []
+    if args.count > 1 and not args.publish_at and not args.dry_run:
+        from src.youtube_uploader import calculate_publish_times
+        publish_schedule = calculate_publish_times(args.count)
+        log.info(f"Batch mode: scheduling {args.count} videos across {(args.count - 1) // 3 + 1} day(s)")
+        for idx, ts in enumerate(publish_schedule, 1):
+            log.info(f"  Video {idx:2d}: {ts}")
+
     success_count = 0
     for i in range(args.count):
         if args.count > 1:
             log.info(f"\n── Run {i + 1} of {args.count} ──")
-        record = run_pipeline(dry_run=args.dry_run, publish_at=args.publish_at)
+        publish_at = publish_schedule[i] if publish_schedule else args.publish_at
+        record = run_pipeline(dry_run=args.dry_run, publish_at=publish_at)
         log.info(
             f"\nRun {record['run_id']} → {record['status'].upper()}"
             f"  [{record.get('finished_at', '')}]"
