@@ -58,32 +58,14 @@ jobs:
             echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > config/token.json
             echo "YouTube token restored"
           fi
-          if [ -n "${{ secrets.TIKTOK_TOKEN_B64 }}" ]; then
-            echo "${{ secrets.TIKTOK_TOKEN_B64 }}" | base64 -d > config/tiktok_token.json
-            echo "TikTok token restored"
-          fi
-          if [ -n "${{ secrets.INSTAGRAM_TOKEN_B64 }}" ]; then
-            echo "${{ secrets.INSTAGRAM_TOKEN_B64 }}" | base64 -d > config/instagram_token.json
-            echo "Instagram token restored"
-          fi
 
-      # ── 6. Restore schedule queue ─────────────────────────────────────────────
-      - name: Restore schedule queue
-        if: ${{ secrets.SCHEDULE_QUEUE_B64 != '' }}
-        run: |
-          echo "${{ secrets.SCHEDULE_QUEUE_B64 }}" | base64 -d > config/schedule_queue.json
-
-      # ── 7. Run pipeline ───────────────────────────────────────────────────────
+      # ── 6. Run pipeline ───────────────────────────────────────────────────────
       - name: Run CipherPulse pipeline
         env:
-          ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
-          PEXELS_API_KEY:       ${{ secrets.PEXELS_API_KEY }}
-          YOUTUBE_CLIENT_ID:    ${{ secrets.YOUTUBE_CLIENT_ID }}
+          ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
+          PEXELS_API_KEY:        ${{ secrets.PEXELS_API_KEY }}
+          YOUTUBE_CLIENT_ID:     ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          TIKTOK_CLIENT_KEY:    ${{ secrets.TIKTOK_CLIENT_KEY }}
-          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
-          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
-          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
         run: |
           COUNT="${{ github.event.inputs.count || '1' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
