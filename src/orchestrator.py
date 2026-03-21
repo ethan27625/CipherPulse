@@ -20,8 +20,9 @@ Pipeline stages per video:
   7. thumbnail_creator → Pillow → 1280×720 PNG
   8. seo_generator   → Claude → titles/captions/tags for 3 platforms
   9. youtube_uploader → OAuth2 upload (always enabled)
- 10. tiktok_uploader → PKCE upload (gated)
- 11. instagram_uploader → Graph API upload (gated; uses file_hoster)
+ 10. engagement_comment → Claude generates + posts topic-specific comment (non-fatal)
+ 11. tiktok_uploader → PKCE upload (gated)
+ 12. instagram_uploader → Graph API upload (gated; uses file_hoster)
 
 All outputs land in output/<YYYYMMDD_HHMMSS>/
 """
@@ -223,8 +224,31 @@ def run_pipeline(
             yt_result = {"status": "error", "error": str(exc)}
         record["uploads"]["youtube"] = yt_result
 
-        # ── Stage 10: TikTok upload ────────────────────────────────────────────
-        log.info("Stage 10/11 — Uploading to TikTok…")
+        # ── Stage 10: Engagement comment ──────────────────────────────────────
+        # Only runs when YouTube upload succeeded and we have a real video ID.
+        # Failure here is non-fatal — logged but pipeline continues.
+        log.info("Stage 10/12 — Posting engagement comment…")
+        comment_result: dict = {}
+        yt_video_id = yt_result.get("video_id")
+        if not dry_run and yt_video_id:
+            try:
+                from src.youtube_uploader import post_engagement_comment
+                comment_result = post_engagement_comment(
+                    video_id=yt_video_id,
+                    video_title=metadata.youtube.title,
+                    topic=topic.topic,
+                )
+                log.info(f"  Comment: {comment_result.get('status')} — {comment_result.get('text', '')[:80]}")
+            except Exception as exc:
+                log.error(f"  Engagement comment failed (non-fatal): {exc}")
+                comment_result = {"status": "error", "error": str(exc)}
+        else:
+            comment_result = {"status": "skipped"}
+            log.info("  Comment skipped (dry-run or no video ID)")
+        record["comment"] = comment_result
+
+        # ── Stage 11: TikTok upload ────────────────────────────────────────────
+        log.info("Stage 11/12 — Uploading to TikTok…")
         tt_result: dict = {}
         try:
             from src.tiktok_uploader import upload_short as tt_upload
@@ -235,8 +259,8 @@ def run_pipeline(
             tt_result = {"status": "error", "error": str(exc)}
         record["uploads"]["tiktok"] = tt_result
 
-        # ── Stage 11: Instagram upload ─────────────────────────────────────────
-        log.info("Stage 11/11 — Uploading to Instagram…")
+        # ── Stage 12: Instagram upload ─────────────────────────────────────────
+        log.info("Stage 12/12 — Uploading to Instagram…")
         ig_result: dict = {}
         try:
             from src.instagram_uploader import upload_short as ig_upload

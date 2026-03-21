@@ -141,6 +141,7 @@ orchestrator.py
 ├── thumbnail_creator.py   (depends on: script title/hook, output directory)
 ├── seo_generator.py       (depends on: script content, topic metadata)
 ├── youtube_uploader.py    (depends on: video.mp4, thumbnail.png, metadata.json)
+│   └── post_engagement_comment()  (Stage 10 — calls Anthropic + commentThreads.insert; non-fatal)
 ├── tiktok_uploader.py     (depends on: video.mp4, metadata.json — gated by config)
 ├── file_hoster.py         (depends on: video.mp4 — only if Instagram enabled)
 └── instagram_uploader.py  (depends on: hosted URL from file_hoster, metadata.json — gated)
@@ -263,12 +264,12 @@ cd ~/CipherPulse && python -m src.orchestrator --count 1 --dry-run
 | video_assembler.py | ✅ Done | 5-stage FFmpeg graph; scale+crop; libass subtitles; amix music; stream_loop |
 | thumbnail_creator.py | ✅ Done | 4-layer Pillow composite; Bebas Neue + Oswald fonts; grid overlay; watermark |
 | seo_generator.py | ✅ Done | Single API call → 3 platforms; JSON fence extraction; Postel's Law clamping |
-| youtube_uploader.py | ✅ Done | OAuth2 flow + auto-refresh; resumable upload; publishAt scheduling; dry-run |
+| youtube_uploader.py | ✅ Done | OAuth2 flow + auto-refresh; resumable upload; publishAt scheduling; post_engagement_comment(); dry-run |
 | tiktok_uploader.py | ✅ Done | PKCE OAuth2; two-phase upload (init→chunks→poll); rotating refresh tokens; schedule_queue.json |
 | instagram_uploader.py | ✅ Done | Graph API container/publish flow; 60-day token auto-refresh; gated behind platforms.json |
 | file_hoster.py | ✅ Done | litterbox.catbox.moe primary (72h TTL); file.io fallback; tenacity retry |
 | topic_picker.py | ✅ Done | pick_topic(); reset_all_topics(); auto-reset when exhausted; --stats CLI |
-| orchestrator.py | ✅ Done | 11-stage pipeline; --count N; --dry-run; --publish-scheduled; --retry-failed; run_log.json |
+| orchestrator.py | ✅ Done | 12-stage pipeline; --count N; --dry-run; --publish-scheduled; --retry-failed; run_log.json |
 | GitHub Actions | ✅ Done | generate-shorts.yml (3× cron); publish-scheduled.yml (hourly); artifact upload; B64 token restore |
 | Dockerfile | ✅ Done | Multi-stage build; ffmpeg+libass; non-root user; volume mounts for output/config |
 | README.md | ✅ Done | Mermaid architecture diagram; quick start; module reference; cost breakdown |

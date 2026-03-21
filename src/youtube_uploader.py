@@ -59,6 +59,7 @@ log = logging.getLogger("youtube_uploader")
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.force-ssl",  # required for commentThreads.insert
 ]
 
 TOKEN_PATH   = Path(__file__).parent.parent / "config" / "token.json"
@@ -602,6 +603,133 @@ def calculate_publish_times(
         current_date += timedelta(days=1)
 
     return timestamps[:count]
+
+
+# ── Engagement comment ────────────────────────────────────────────────────────
+
+def _generate_comment_text(video_title: str, topic: str) -> str:
+    """
+    Call the Anthropic API to write a topic-specific engagement question.
+
+    We use claude-haiku for this — it's a simple, low-token task and haiku
+    is fast/cheap. The system prompt is intentionally tight: one question,
+    personal framing, one emoji, hard character limit, no hashtags.
+
+    The model sees the video title and topic so it can reference specifics
+    (e.g. "SolarWinds" or "AI voice cloning") rather than producing a
+    generic "what do you think?" comment.
+
+    Args:
+        video_title: The YouTube title from metadata.json
+        topic:       The raw topic string from topics.json
+
+    Returns:
+        Comment text string, stripped of leading/trailing whitespace.
+    """
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=80,
+        system=(
+            "Write a single engaging YouTube comment question. "
+            "Reference the specific topic. "
+            "Make it personal — ask about THEIR experience. "
+            "Include one emoji. "
+            "Under 200 characters. "
+            "No hashtags."
+        ),
+        messages=[{
+            "role": "user",
+            "content": f"Video title: {video_title}\nTopic: {topic}",
+        }],
+    )
+    return message.content[0].text.strip()
+
+
+def post_engagement_comment(
+    video_id: str,
+    video_title: str,
+    topic: str,
+) -> dict:
+    """
+    Generate and post a topic-specific engagement comment on a YouTube video.
+
+    How commentThreads.insert works:
+      - A "comment thread" is a top-level comment + its replies.
+      - You POST to commentThreads with part="snippet" and a body that contains:
+          snippet.videoId             — the video to comment on
+          snippet.topLevelComment     — the comment object
+            .snippet.textOriginal     — raw text (not HTML-encoded)
+      - YouTube returns the full commentThread resource including the
+        auto-assigned comment ID, which you'd need to pin via YouTube Studio.
+      - The authenticated user (your channel) is automatically the author.
+
+    Pinning note:
+      There is NO official YouTube Data API v3 endpoint to pin a comment.
+      The pin action is only available in YouTube Studio UI. To pin manually:
+        YouTube Studio → Content → click video → Comments tab → ⋮ → Pin comment
+
+    Requires the youtube.force-ssl OAuth scope (already in SCOPES).
+
+    Args:
+        video_id:    YouTube video ID string (e.g. "dQw4w9WgXcQ")
+        video_title: YouTube title used to generate a relevant question
+        topic:       Raw topic string from topics.json (e.g. "SolarWinds hack")
+
+    Returns:
+        Dict with keys:
+          status:           "commented" | "failed"
+          comment_id:       YouTube comment ID (or None)
+          comment_thread_id: YouTube comment thread ID (or None)
+          text:             The comment text that was posted (or None)
+          error:            Error message string (only present on failure)
+    """
+    try:
+        comment_text = _generate_comment_text(video_title, topic)
+        log.info(f"Generated engagement comment: {comment_text!r}")
+
+        service = get_authenticated_service()
+
+        body = {
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": comment_text,
+                    }
+                },
+            }
+        }
+
+        result = service.commentThreads().insert(
+            part="snippet",
+            body=body,
+        ).execute()
+
+        comment_thread_id = result["id"]
+        comment_id = result["snippet"]["topLevelComment"]["id"]
+
+        log.info(f"Comment posted — thread: {comment_thread_id}, comment: {comment_id}")
+        log.info("To pin: YouTube Studio → Content → video → Comments → ⋮ → Pin comment")
+
+        return {
+            "status":            "commented",
+            "comment_id":        comment_id,
+            "comment_thread_id": comment_thread_id,
+            "text":              comment_text,
+        }
+
+    except Exception as e:
+        log.error(f"Engagement comment failed: {e}")
+        return {
+            "status": "failed",
+            "comment_id":        None,
+            "comment_thread_id": None,
+            "text":              None,
+            "error":             str(e),
+        }
 
 
 # ── CLI entrypoint ─────────────────────────────────────────────────────────────
