@@ -155,6 +155,7 @@ orchestrator.py
 |---|---|---|
 | `ANTHROPIC_API_KEY` | script_writer.py, seo_generator.py | console.anthropic.com |
 | `PEXELS_API_KEY` | footage_downloader.py | pexels.com/api |
+| `PIXABAY_API_KEY` | download_safe_music.py | pixabay.com/api/docs (free) |
 | `YOUTUBE_CLIENT_ID` | youtube_uploader.py | Google Cloud Console |
 | `YOUTUBE_CLIENT_SECRET` | youtube_uploader.py | Google Cloud Console |
 | `TIKTOK_CLIENT_KEY` | tiktok_uploader.py | developers.tiktok.com |
@@ -182,8 +183,22 @@ All uploaders have `--dry-run` mode for testing without actually uploading.
 2. **No article text reproduction** — scripts must be 100% original. Headlines = topic inspiration only.
 3. **No fabricated incidents** — never attribute fake attacks to real companies
 4. **No API keys in code** — always environment variables
-5. **Video must be under 58 seconds** — voice_generator validates; script_writer retries if over
+5. **Video must be under 58 seconds** — voice_generator validates; orchestrator enforces with RuntimeError if over
 6. **Captions in middle third** — MarginV=400, never at bottom where UI overlays block them
+7. **Music must be in music_licenses.json** — NEVER use a track not registered by download_safe_music.py; unregistered files are rejected at runtime by video_assembler and text_card_assembler
+
+## Music Licensing
+All background music MUST be downloaded via `src/download_safe_music.py` which:
+- Searches Pixabay Music API (free key at pixabay.com/api/docs)
+- Records each track's filename, source URL, Pixabay ID, artist, and download date in `music_licenses.json`
+- `video_assembler._pick_music_track()` and `text_card_assembler._pick_music()` both call `verify_track()` before using any file
+
+If a video gets a Content-ID claim, use `music_licenses.json` to identify the exact track (by `pixabay_id` and `source_url`), delete it from `assets/music/`, remove its entry from the registry, and re-run `download_safe_music.py` to replace it.
+
+Setup command (run once after cloning):
+```bash
+cd ~/CipherPulse && python3 -m src.download_safe_music --count 15
+```
 
 ---
 
@@ -257,6 +272,8 @@ cd ~/CipherPulse && python -m src.orchestrator --count 1 --dry-run
 | config/platforms.json | ✅ Done | YT enabled; TikTok + IG gated |
 | state.json | ✅ Done | Schema defined, empty |
 | schedule_queue.json | ✅ Done | Empty queue ready |
+| music_licenses.json | ✅ Done | License registry; every track must be registered before use |
+| download_safe_music.py | ✅ Done | Pixabay API music downloader; registers tracks in music_licenses.json; --list/--purge-unregistered CLI |
 | news_fetcher.py | ✅ Done | 6 RSS feeds; MAX_AGE_DAYS=14; Headline dataclass; to_prompt_context() for Claude |
 | script_writer.py | ✅ Done | Anthropic SDK; Script dataclass; duration validation; retry loop; news_context injection |
 | voice_generator.py | ✅ Done | edge-tts SentenceBoundary→word timing; mutagen real duration; SRT 5-word chunks |

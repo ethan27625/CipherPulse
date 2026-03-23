@@ -11,6 +11,14 @@ output/
 # ── Cached stock footage (re-downloaded as needed) ───────────────────────────
 assets/footage_cache/
 
+# ── Music files (re-downloaded via download_safe_music.py) ───────────────────
+# music_licenses.json IS committed — it is the license registry.
+# The actual .mp3 files are NOT committed (large binaries, re-downloadable).
+assets/music/*.mp3
+assets/music/*.wav
+assets/music/*.m4a
+assets/music/*.flac
+
 # ── Logs ─────────────────────────────────────────────────────────────────────
 logs/
 

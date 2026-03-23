@@ -1,0 +1,6 @@
+{
+  "version": "1.0",
+  "description": "Registry of all music tracks used by CipherPulse. Every file in assets/music/ MUST have an entry here before it can be used. Tracks without a valid entry are rejected at runtime.",
+  "last_updated": null,
+  "tracks": []
+}

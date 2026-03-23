@@ -96,21 +96,42 @@ PAN_CENTER_Y = (SCALE_H - VIDEO_HEIGHT) // 2  # 48px — keep crop centered vert
 
 def _pick_music_track() -> Optional[Path]:
     """
-    Randomly select a music track from assets/music/.
+    Randomly select a licensed music track from assets/music/.
 
-    Accepts .mp3, .wav, .m4a, .flac files.
-    Returns None if the directory is empty — caller produces voice-only audio.
+    Only tracks registered in music_licenses.json are eligible.  Any file
+    present on disk but absent from the registry is skipped and logged as an
+    error — this prevents unverified tracks from creating Content-ID claims.
+
+    Returns None if no licensed tracks are available; caller produces voice-only audio.
     """
     if not MUSIC_DIR.exists():
         return None
-    tracks = [
+
+    from src.download_safe_music import verify_track
+
+    all_tracks = [
         p for p in MUSIC_DIR.iterdir()
         if p.suffix.lower() in {".mp3", ".wav", ".m4a", ".flac"}
     ]
-    if not tracks:
-        log.warning("assets/music/ is empty — producing voice-only audio (no background music)")
+
+    licensed: list[Path] = []
+    for p in all_tracks:
+        if verify_track(p.name):
+            licensed.append(p)
+        else:
+            log.error(
+                f"Rejecting unregistered music file: {p.name} — "
+                "run 'python3 -m src.download_safe_music' to populate the registry"
+            )
+
+    if not licensed:
+        log.warning(
+            "No licensed tracks in assets/music/ — producing voice-only audio. "
+            "Run: python3 -m src.download_safe_music"
+        )
         return None
-    chosen = random.choice(tracks)
+
+    chosen = random.choice(licensed)
     log.info(f"Background music: {chosen.name}")
     return chosen
 

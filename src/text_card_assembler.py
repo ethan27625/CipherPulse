@@ -513,12 +513,38 @@ def _make_static_clip(slide_img: Image.Image, duration: float, out: Path) -> Non
 # ── Music picker ──────────────────────────────────────────────────────────────
 
 def _pick_music() -> Optional[Path]:
-    """Return a random track from assets/music/, or None if the dir is empty."""
-    tracks = list(MUSIC_DIR.glob("*.mp3"))
-    if not tracks:
-        log.warning("No music in assets/music/ — producing silent video")
+    """
+    Return a random licensed track from assets/music/, or None if none are available.
+
+    Only tracks registered in music_licenses.json are eligible.  Files present
+    on disk but absent from the registry are rejected to avoid Content-ID claims.
+    Run 'python3 -m src.download_safe_music' to populate the registry.
+    """
+    from src.download_safe_music import verify_track
+
+    all_tracks = [
+        p for p in MUSIC_DIR.iterdir()
+        if p.suffix.lower() in {".mp3", ".wav", ".m4a", ".flac"}
+    ] if MUSIC_DIR.exists() else []
+
+    licensed: list[Path] = []
+    for p in all_tracks:
+        if verify_track(p.name):
+            licensed.append(p)
+        else:
+            log.error(
+                f"Rejecting unregistered music file: {p.name} — "
+                "run 'python3 -m src.download_safe_music' to add it to the registry"
+            )
+
+    if not licensed:
+        log.warning(
+            "No licensed tracks in assets/music/ — producing silent text card. "
+            "Run: python3 -m src.download_safe_music"
+        )
         return None
-    return random.choice(tracks)
+
+    return random.choice(licensed)
 
 
 # ── FFmpeg xfade stitcher ─────────────────────────────────────────────────────

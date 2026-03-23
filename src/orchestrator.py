@@ -188,6 +188,16 @@ def run_pipeline(
                 f"  Voice: {voice.duration_seconds:.1f}s, "
                 f"{voice.word_count} words, {voice.caption_count} captions"
             )
+            # Hard duration gate — Shorts must be strictly under 58 seconds.
+            # voice_generator logs a warning but never raises; enforce here so
+            # an over-length voiceover never reaches upload.
+            MAX_VOICEOVER_SECONDS = 58
+            if voice.duration_seconds > MAX_VOICEOVER_SECONDS:
+                raise RuntimeError(
+                    f"Voiceover is {voice.duration_seconds:.1f}s — exceeds "
+                    f"{MAX_VOICEOVER_SECONDS}s Short limit. "
+                    "Regenerate with a shorter script."
+                )
 
         # ── Stage 5: Footage ───────────────────────────────────────────────────
         log.info("Stage 5/12 — Downloading footage clips…")
