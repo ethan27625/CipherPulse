@@ -1,27 +1,29 @@
 """
-download_safe_music.py — Download royalty-free music from Pixabay API and
-register each track in music_licenses.json.
+download_safe_music.py — Download royalty-free music and register each track
+in music_licenses.json so the pipeline can verify provenance before use.
 
-Why Pixabay API (not manual downloads)?
-  Tracks downloaded via the Pixabay API carry a machine-readable license
-  confirming the Pixabay Content License at the moment of download.  We record
-  the API response URL and license_type so every file in assets/music/ has an
-  auditable provenance chain.
+Supported sources
+-----------------
+soundhelix (default, no API key needed)
+  16 CC0 public-domain electronic tracks from SoundHelix.com.
+  Generated music — zero copyright, zero Content-ID risk.
+  Perfect for getting the pipeline running immediately.
 
-  Note: Pixabay's Content License allows commercial use and does NOT require
-  attribution, but individual artists CAN register tracks with YouTube
-  Content-ID independently.  This registry exists so we can trace any claim
-  back to its source URL and swap out the track.
+jamendo (upgrade — better quality dark ambient)
+  Creative Commons music via the Jamendo API.
+  Requires a free client_id from https://devportal.jamendo.com/
+  Set JAMENDO_CLIENT_ID in your .env file.
 
 Usage:
-  python3 -m src.download_safe_music              # download 10 dark-ambient tracks
-  python3 -m src.download_safe_music --count 20   # download 20 tracks
-  python3 -m src.download_safe_music --query "electronic dark"
-  python3 -m src.download_safe_music --list       # show currently registered tracks
-  python3 -m src.download_safe_music --purge-unregistered  # remove files not in registry
+  python3 -m src.download_safe_music                       # soundhelix, all 16 tracks
+  python3 -m src.download_safe_music --source jamendo       # jamendo dark ambient
+  python3 -m src.download_safe_music --source jamendo --query "electronic" --count 20
+  python3 -m src.download_safe_music --list                 # show registered tracks
+  python3 -m src.download_safe_music --purge-unregistered   # remove untracked files
 
-Environment variable required:
-  PIXABAY_API_KEY — get a free key at https://pixabay.com/api/docs/
+Environment variables:
+  JAMENDO_CLIENT_ID  — required only for --source jamendo
+                       get free at https://devportal.jamendo.com/
 """
 
 from __future__ import annotations
@@ -37,9 +39,9 @@ from typing import Optional
 import requests
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 # ── Logging ───────────────────────────────────────────────────────────────────
@@ -62,21 +64,33 @@ MUSIC_DIR     = ASSETS_DIR / "music"
 LICENSES_PATH = Path(__file__).parent.parent / "music_licenses.json"
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-PIXABAY_MUSIC_API  = "https://pixabay.com/api/music/"
-DEFAULT_QUERY      = "dark ambient"
-DEFAULT_COUNT      = 10
-MIN_DURATION_S     = 60    # reject tracks shorter than 60 seconds
-MAX_DURATION_S     = 600   # reject tracks longer than 10 minutes
-LICENSE_TYPE       = "Pixabay Content License"
-LICENSE_URL        = "https://pixabay.com/service/license-summary/"
-REQUEST_TIMEOUT    = 30    # seconds
-DELAY_BETWEEN_DL   = 1.0   # seconds between downloads (rate-limit courtesy)
+REQUEST_TIMEOUT   = 30    # seconds per HTTP request
+DELAY_BETWEEN_DL  = 0.5   # courtesy delay between downloads
+
+# ── SoundHelix CC0 catalogue ──────────────────────────────────────────────────
+# 16 programmatically-generated electronic tracks.
+# Author: Thomas Schürger (https://www.soundhelix.com)
+# License: CC0 1.0 Universal (Public Domain Dedication)
+# No attribution required. Zero Content-ID risk.
+SOUNDHELIX_BASE    = "https://www.soundhelix.com/examples/mp3"
+SOUNDHELIX_TRACKS  = [
+    {"id": i, "title": f"SoundHelix Song {i}", "filename": f"soundhelix-song-{i:02d}.mp3",
+     "url": f"{SOUNDHELIX_BASE}/SoundHelix-Song-{i}.mp3"}
+    for i in range(1, 17)
+]
+SOUNDHELIX_LICENSE = "CC0 1.0 Universal (Public Domain)"
+SOUNDHELIX_URL     = "https://creativecommons.org/publicdomain/zero/1.0/"
+
+# ── Jamendo API ───────────────────────────────────────────────────────────────
+JAMENDO_API_BASE   = "https://api.jamendo.com/v3.0"
+JAMENDO_LICENSE    = "Creative Commons (Jamendo)"
+JAMENDO_LICENSE_URL = "https://creativecommons.org/licenses/"
 
 
 # ── License registry helpers ──────────────────────────────────────────────────
 
 def _load_registry() -> dict:
-    """Load music_licenses.json, creating it if absent."""
+    """Load music_licenses.json, creating a fresh one if absent or corrupt."""
     if LICENSES_PATH.exists():
         try:
             return json.loads(LICENSES_PATH.read_text())
@@ -95,14 +109,13 @@ def _load_registry() -> dict:
 
 
 def _save_registry(registry: dict) -> None:
-    """Persist the registry to disk."""
+    """Write the registry to disk with today's date."""
     registry["last_updated"] = date.today().isoformat()
     LICENSES_PATH.write_text(json.dumps(registry, indent=2))
-    log.debug(f"Registry saved: {len(registry['tracks'])} tracks")
 
 
 def _is_registered(filename: str, registry: dict) -> bool:
-    """Return True if filename is present in the registry."""
+    """Return True if filename appears in the registry."""
     return any(t["filename"] == filename for t in registry["tracks"])
 
 
@@ -114,54 +127,24 @@ def _register_track(
     artist: str,
     title: str,
     duration_s: int,
-    pixabay_id: int,
+    track_id: str,
     registry: dict,
 ) -> None:
-    """Add a new track entry to the in-memory registry dict."""
+    """Append a new track entry to the in-memory registry dict."""
     registry["tracks"].append({
-        "filename":     filename,
-        "title":        title,
-        "artist":       artist,
-        "duration_s":   duration_s,
-        "pixabay_id":   pixabay_id,
-        "source_url":   source_url,
-        "license_type": license_type,
-        "license_url":  license_url,
+        "filename":      filename,
+        "title":         title,
+        "artist":        artist,
+        "duration_s":    duration_s,
+        "track_id":      track_id,
+        "source_url":    source_url,
+        "license_type":  license_type,
+        "license_url":   license_url,
         "download_date": date.today().isoformat(),
     })
 
 
-# ── Pixabay API ───────────────────────────────────────────────────────────────
-
-@retry(
-    retry=retry_if_exception_type(requests.RequestException),
-    wait=wait_exponential(multiplier=1, min=2, max=30),
-    stop=stop_after_attempt(4),
-    reraise=True,
-)
-def _api_search(query: str, page: int, api_key: str) -> dict:
-    """
-    Call the Pixabay Music API and return the parsed JSON response.
-
-    Pixabay Music API parameters:
-      key        — your API key
-      q          — search query (URL-encoded by requests)
-      category   — we use 'music' (vs 'sound_effects')
-      per_page   — max 200 results per page
-      page       — pagination (1-indexed)
-
-    Returns the full JSON dict with 'hits' list and 'totalHits' count.
-    """
-    params = {
-        "key":      api_key,
-        "q":        query,
-        "per_page": 50,
-        "page":     page,
-    }
-    resp = requests.get(PIXABAY_MUSIC_API, params=params, timeout=REQUEST_TIMEOUT)
-    resp.raise_for_status()
-    return resp.json()
-
+# ── HTTP helpers ──────────────────────────────────────────────────────────────
 
 @retry(
     retry=retry_if_exception_type(requests.RequestException),
@@ -178,159 +161,225 @@ def _download_file(url: str, dest: Path) -> None:
                 f.write(chunk)
 
 
-# ── Filename builder ──────────────────────────────────────────────────────────
+@retry(
+    retry=retry_if_exception_type(requests.RequestException),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(4),
+    reraise=True,
+)
+def _api_get(url: str, params: dict) -> dict:
+    """GET a JSON API endpoint and return the parsed response."""
+    r = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+    r.raise_for_status()
+    return r.json()
 
-def _safe_filename(artist: str, title: str, pixabay_id: int) -> str:
-    """
-    Build a filesystem-safe filename that encodes provenance.
 
-    Format: {artist_slug}-{title_slug}-{id}.mp3
-    Example: evgeny_bardyuzha-password-infinity-123276.mp3
+# ── SoundHelix source ─────────────────────────────────────────────────────────
+
+def _download_soundhelix(count: int) -> list[str]:
     """
+    Download up to count SoundHelix CC0 tracks.
+
+    All 16 tracks are pre-defined with known URLs — no API call needed.
+    Already-registered tracks are skipped so re-running is safe.
+    """
+    MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    registry = _load_registry()
+    registered = {t["filename"] for t in registry["tracks"]}
+
+    downloaded: list[str] = []
+    for track in SOUNDHELIX_TRACKS:
+        if len(downloaded) >= count:
+            break
+        if track["filename"] in registered:
+            log.debug(f"Skip {track['filename']} — already registered")
+            continue
+
+        dest = MUSIC_DIR / track["filename"]
+        log.info(f"Downloading {track['filename']} …")
+        try:
+            _download_file(track["url"], dest)
+        except Exception as exc:
+            log.error(f"Download failed: {exc}")
+            if dest.exists():
+                dest.unlink()
+            continue
+
+        _register_track(
+            filename=track["filename"],
+            source_url=track["url"],
+            license_type=SOUNDHELIX_LICENSE,
+            license_url=SOUNDHELIX_URL,
+            artist="Thomas Schürger / SoundHelix",
+            title=track["title"],
+            duration_s=0,       # SoundHelix doesn't expose duration; 0 = unknown
+            track_id=f"soundhelix-{track['id']}",
+            registry=registry,
+        )
+        _save_registry(registry)
+        downloaded.append(track["filename"])
+        log.info(f"  ✓ {track['filename']} registered")
+        time.sleep(DELAY_BETWEEN_DL)
+
+    return downloaded
+
+
+# ── Jamendo source ─────────────────────────────────────────────────────────────
+
+def _safe_filename_jamendo(artist: str, title: str, track_id: str) -> str:
+    """Build a safe filename from Jamendo metadata."""
+    import re
+
     def slug(s: str) -> str:
-        import re
         s = s.lower().strip()
         s = re.sub(r"[^a-z0-9]+", "_", s)
-        return s.strip("_")[:40]
+        return s.strip("_")[:36]
 
-    return f"{slug(artist)}-{slug(title)}-{pixabay_id}.mp3"
+    return f"jamendo-{slug(artist)}-{slug(title)}-{track_id}.mp3"
 
 
-# ── Main download logic ───────────────────────────────────────────────────────
-
-def download_tracks(
-    query: str = DEFAULT_QUERY,
-    count: int = DEFAULT_COUNT,
-    api_key: Optional[str] = None,
+def _download_jamendo(
+    query: str = "dark ambient",
+    count: int = 10,
+    client_id: Optional[str] = None,
 ) -> list[str]:
     """
-    Search Pixabay for music matching query and download up to count new tracks.
+    Search Jamendo for CC-licensed tracks matching query and download up to count.
 
-    Only downloads tracks that are:
-      - Not already present in music_licenses.json (de-duplicated by Pixabay ID)
-      - Between MIN_DURATION_S and MAX_DURATION_S long
-      - Have a valid audio_url in the API response
-
-    Each downloaded track is immediately registered in music_licenses.json.
-
-    Args:
-        query:   Search terms (default: "dark ambient")
-        count:   Maximum number of new tracks to download
-        api_key: Pixabay API key (default: read from PIXABAY_API_KEY env var)
-
-    Returns:
-        List of downloaded filenames (may be shorter than count if not enough results)
-
-    Raises:
-        EnvironmentError: If no API key is available
-        RuntimeError: If the API returns an error
+    Requires JAMENDO_CLIENT_ID environment variable (free at devportal.jamendo.com).
+    Only downloads tracks where audiodownload_allowed is True.
     """
-    if api_key is None:
-        api_key = os.environ.get("PIXABAY_API_KEY", "")
-    if not api_key:
+    if client_id is None:
+        client_id = os.environ.get("JAMENDO_CLIENT_ID", "")
+    if not client_id:
         raise EnvironmentError(
-            "PIXABAY_API_KEY environment variable is not set. "
-            "Get a free key at https://pixabay.com/api/docs/"
+            "JAMENDO_CLIENT_ID is not set. "
+            "Get a free client ID at https://devportal.jamendo.com/"
         )
 
     MUSIC_DIR.mkdir(parents=True, exist_ok=True)
     registry = _load_registry()
-
-    # Build a set of already-registered Pixabay IDs for fast lookup
-    registered_ids: set[int] = {t["pixabay_id"] for t in registry["tracks"]}
+    registered_ids = {t["track_id"] for t in registry["tracks"]}
 
     downloaded: list[str] = []
-    page = 1
+    offset = 0
+    per_page = 50
 
-    log.info(f"Searching Pixabay Music: query={query!r}, want={count} new tracks")
+    log.info(f"Searching Jamendo: query={query!r}, want={count} tracks")
 
     while len(downloaded) < count:
-        log.info(f"  Fetching page {page}…")
         try:
-            data = _api_search(query, page, api_key)
+            data = _api_get(
+                f"{JAMENDO_API_BASE}/tracks/",
+                {
+                    "client_id":       client_id,
+                    "format":          "json",
+                    "limit":           per_page,
+                    "offset":          offset,
+                    "namesearch":      query,
+                    "audioformat":     "mp31",
+                    "audiodlformat":   "mp32",
+                    "include":         "musicinfo",
+                },
+            )
         except Exception as exc:
-            log.error(f"Pixabay API error: {exc}")
+            log.error(f"Jamendo API error: {exc}")
             break
 
-        hits = data.get("hits", [])
-        if not hits:
-            log.info("  No more results from Pixabay.")
+        results = data.get("results", [])
+        if not results:
+            log.info("No more Jamendo results.")
             break
 
-        for hit in hits:
+        for hit in results:
             if len(downloaded) >= count:
                 break
 
-            pid      = hit.get("id", 0)
-            title    = hit.get("title", "unknown")
-            artist   = hit.get("user", "unknown")
-            duration = hit.get("duration", 0)  # seconds
-            audio_url = hit.get("audio", "") or hit.get("previewURL", "")
+            track_id   = str(hit.get("id", ""))
+            title      = hit.get("name", "unknown")
+            artist     = hit.get("artist_name", "unknown")
+            duration   = int(hit.get("duration", 0))
+            audio_url  = hit.get("audiodownload", "") or hit.get("audio", "")
+            dl_allowed = hit.get("audiodownload_allowed", True)
 
-            # Skip already-registered tracks
-            if pid in registered_ids:
-                log.debug(f"  Skip #{pid} {title!r} — already registered")
+            jamendo_id = f"jamendo-{track_id}"
+            if jamendo_id in registered_ids:
+                log.debug(f"Skip Jamendo #{track_id} {title!r} — already registered")
                 continue
 
-            # Duration filter
-            if not (MIN_DURATION_S <= duration <= MAX_DURATION_S):
-                log.debug(
-                    f"  Skip #{pid} {title!r} — duration {duration}s "
-                    f"outside [{MIN_DURATION_S}, {MAX_DURATION_S}]"
-                )
+            if not dl_allowed or not audio_url:
+                log.debug(f"Skip Jamendo #{track_id} {title!r} — download not allowed")
                 continue
 
-            # Audio URL check
-            if not audio_url:
-                log.debug(f"  Skip #{pid} {title!r} — no audio URL in API response")
-                continue
-
-            filename = _safe_filename(artist, title, pid)
+            filename = _safe_filename_jamendo(artist, title, track_id)
             dest     = MUSIC_DIR / filename
 
-            # Download
+            log.info(f"Downloading: {filename} ({duration}s)")
             try:
-                log.info(f"  Downloading: {filename} ({duration}s) from {audio_url[:60]}…")
                 _download_file(audio_url, dest)
             except Exception as exc:
-                log.error(f"  Download failed for #{pid}: {exc}")
+                log.error(f"Download failed for #{track_id}: {exc}")
                 if dest.exists():
                     dest.unlink()
                 continue
 
-            # Register
             _register_track(
                 filename=filename,
                 source_url=audio_url,
-                license_type=LICENSE_TYPE,
-                license_url=LICENSE_URL,
+                license_type=JAMENDO_LICENSE,
+                license_url=JAMENDO_LICENSE_URL,
                 artist=artist,
                 title=title,
                 duration_s=duration,
-                pixabay_id=pid,
+                track_id=jamendo_id,
                 registry=registry,
             )
-            registered_ids.add(pid)
+            registered_ids.add(jamendo_id)
             _save_registry(registry)
             downloaded.append(filename)
-
-            log.info(f"  ✓ {filename} registered in music_licenses.json")
+            log.info(f"  ✓ {filename} registered")
             time.sleep(DELAY_BETWEEN_DL)
 
-        page += 1
-        # Safety: Pixabay API caps at 500 results (10 pages × 50)
-        if page > 10:
+        offset += per_page
+        if offset > 500:
             break
 
-    log.info(f"Download complete: {len(downloaded)} new tracks added")
     return downloaded
+
+
+# ── Public API ────────────────────────────────────────────────────────────────
+
+def download_tracks(
+    source: str = "soundhelix",
+    query: str = "dark ambient",
+    count: int = 16,
+    api_key: Optional[str] = None,
+) -> list[str]:
+    """
+    Download music tracks from the specified source and register them.
+
+    Args:
+        source:  "soundhelix" (default, no key needed) or "jamendo"
+        query:   Search query — only used for Jamendo
+        count:   Maximum tracks to download
+        api_key: Jamendo client_id (falls back to JAMENDO_CLIENT_ID env var)
+
+    Returns:
+        List of downloaded filenames.
+    """
+    if source == "soundhelix":
+        return _download_soundhelix(count)
+    elif source == "jamendo":
+        return _download_jamendo(query=query, count=count, client_id=api_key)
+    else:
+        raise ValueError(f"Unknown source {source!r}. Use 'soundhelix' or 'jamendo'.")
 
 
 def verify_track(filename: str) -> bool:
     """
     Check that filename is registered in music_licenses.json.
 
-    Called by video_assembler and text_card_assembler before using a track.
+    Called by video_assembler and text_card_assembler before using any track.
     Returns True if the track is registered, False otherwise.
     """
     if not LICENSES_PATH.exists():
@@ -346,20 +395,18 @@ def verify_track(filename: str) -> bool:
 
 def purge_unregistered() -> list[str]:
     """
-    Remove any .mp3/.wav/.m4a/.flac files from assets/music/ that are not
-    in music_licenses.json.  Returns list of deleted filenames.
+    Delete music files from assets/music/ that are not in music_licenses.json.
+    Returns list of deleted filenames.
     """
     registry = _load_registry()
     registered = {t["filename"] for t in registry["tracks"]}
-
     deleted: list[str] = []
     for p in MUSIC_DIR.iterdir():
         if p.suffix.lower() in {".mp3", ".wav", ".m4a", ".flac"}:
             if p.name not in registered:
-                log.warning(f"Removing unregistered track: {p.name}")
+                log.warning(f"Removing unregistered: {p.name}")
                 p.unlink()
                 deleted.append(p.name)
-
     if deleted:
         log.info(f"Purged {len(deleted)} unregistered track(s)")
     else:
@@ -374,53 +421,57 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv()
-    logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
-        description="Download royalty-free music from Pixabay and register licenses"
+        description="Download royalty-free music and register licenses"
     )
     parser.add_argument(
-        "--query", default=DEFAULT_QUERY,
-        help=f'Search query (default: "{DEFAULT_QUERY}")',
+        "--source", default="soundhelix", choices=["soundhelix", "jamendo"],
+        help=(
+            "Music source. 'soundhelix' = 16 CC0 tracks, no API key needed (default). "
+            "'jamendo' = CC-licensed dark ambient, requires JAMENDO_CLIENT_ID in .env."
+        ),
     )
     parser.add_argument(
-        "--count", type=int, default=DEFAULT_COUNT,
-        help=f"Number of tracks to download (default: {DEFAULT_COUNT})",
+        "--query", default="dark ambient",
+        help='Search query for Jamendo (default: "dark ambient")',
+    )
+    parser.add_argument(
+        "--count", type=int, default=16,
+        help="Number of tracks to download (default: 16)",
     )
     parser.add_argument(
         "--list", action="store_true",
-        help="List all registered tracks and exit",
+        help="List registered tracks and exit",
     )
     parser.add_argument(
         "--purge-unregistered", action="store_true", dest="purge",
-        help="Delete any music files not in music_licenses.json",
+        help="Delete music files not in music_licenses.json",
     )
     args = parser.parse_args()
 
     if args.list:
         reg = _load_registry()
         tracks = reg.get("tracks", [])
-        if not tracks:
-            print("No registered tracks.")
-        else:
-            print(f"\n{'Registered tracks in music_licenses.json':}")
-            print(f"{'─' * 60}")
-            for t in tracks:
-                print(
-                    f"  {t['filename']}\n"
-                    f"    Artist: {t['artist']}\n"
-                    f"    Duration: {t['duration_s']}s\n"
-                    f"    License: {t['license_type']}\n"
-                    f"    Downloaded: {t['download_date']}\n"
-                )
-        print(f"Total: {len(tracks)} tracks")
+        print(f"\nRegistered tracks ({len(tracks)} total):")
+        print("─" * 60)
+        for t in tracks:
+            dur = f"{t['duration_s']}s" if t.get("duration_s") else "unknown duration"
+            print(f"  {t['filename']}")
+            print(f"    Artist:  {t['artist']}")
+            print(f"    License: {t['license_type']}")
+            print(f"    Added:   {t['download_date']}")
+            print()
     elif args.purge:
         deleted = purge_unregistered()
         print(f"Deleted {len(deleted)} unregistered file(s).")
     else:
-        files = download_tracks(query=args.query, count=args.count)
+        files = download_tracks(source=args.source, query=args.query, count=args.count)
         print(f"\nDownloaded and registered {len(files)} track(s):")
         for f in files:
             print(f"  {f}")
         if not files:
-            print("  (none — check PIXABAY_API_KEY and try again)")
+            if args.source == "jamendo":
+                print("  Check JAMENDO_CLIENT_ID in .env (devportal.jamendo.com for free key)")
+            else:
+                print("  Check your internet connection and try again")

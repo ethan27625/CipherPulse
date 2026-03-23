@@ -1,6 +1,183 @@
 {
   "version": "1.0",
   "description": "Registry of all music tracks used by CipherPulse. Every file in assets/music/ MUST have an entry here before it can be used. Tracks without a valid entry are rejected at runtime.",
-  "last_updated": null,
-  "tracks": []
+  "last_updated": "2026-03-23",
+  "tracks": [
+    {
+      "filename": "soundhelix-song-01.mp3",
+      "title": "SoundHelix Song 1",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-1",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-02.mp3",
+      "title": "SoundHelix Song 2",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-2",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-03.mp3",
+      "title": "SoundHelix Song 3",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-3",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-04.mp3",
+      "title": "SoundHelix Song 4",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-4",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-05.mp3",
+      "title": "SoundHelix Song 5",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-5",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-06.mp3",
+      "title": "SoundHelix Song 6",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-6",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-07.mp3",
+      "title": "SoundHelix Song 7",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-7",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-08.mp3",
+      "title": "SoundHelix Song 8",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-8",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-09.mp3",
+      "title": "SoundHelix Song 9",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-9",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-10.mp3",
+      "title": "SoundHelix Song 10",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-10",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-11.mp3",
+      "title": "SoundHelix Song 11",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-11",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-12.mp3",
+      "title": "SoundHelix Song 12",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-12",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-13.mp3",
+      "title": "SoundHelix Song 13",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-13",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-14.mp3",
+      "title": "SoundHelix Song 14",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-14",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-15.mp3",
+      "title": "SoundHelix Song 15",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-15",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    },
+    {
+      "filename": "soundhelix-song-16.mp3",
+      "title": "SoundHelix Song 16",
+      "artist": "Thomas Sch\u00fcrger / SoundHelix",
+      "duration_s": 0,
+      "track_id": "soundhelix-16",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-23"
+    }
+  ]
 }

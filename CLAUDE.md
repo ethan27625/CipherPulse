@@ -155,7 +155,7 @@ orchestrator.py
 |---|---|---|
 | `ANTHROPIC_API_KEY` | script_writer.py, seo_generator.py | console.anthropic.com |
 | `PEXELS_API_KEY` | footage_downloader.py | pexels.com/api |
-| `PIXABAY_API_KEY` | download_safe_music.py | pixabay.com/api/docs (free) |
+| `JAMENDO_CLIENT_ID` | download_safe_music.py | devportal.jamendo.com (free, optional — SoundHelix works with no key) |
 | `YOUTUBE_CLIENT_ID` | youtube_uploader.py | Google Cloud Console |
 | `YOUTUBE_CLIENT_SECRET` | youtube_uploader.py | Google Cloud Console |
 | `TIKTOK_CLIENT_KEY` | tiktok_uploader.py | developers.tiktok.com |
@@ -195,9 +195,14 @@ All background music MUST be downloaded via `src/download_safe_music.py` which:
 
 If a video gets a Content-ID claim, use `music_licenses.json` to identify the exact track (by `pixabay_id` and `source_url`), delete it from `assets/music/`, remove its entry from the registry, and re-run `download_safe_music.py` to replace it.
 
+Two supported sources:
+- **SoundHelix** (default, no API key) — 16 CC0 public-domain electronic tracks
+- **Jamendo** (optional upgrade) — CC-licensed dark ambient, needs free `JAMENDO_CLIENT_ID`
+
 Setup command (run once after cloning):
 ```bash
-cd ~/CipherPulse && python3 -m src.download_safe_music --count 15
+cd ~/CipherPulse && python3 -m src.download_safe_music          # SoundHelix, no key needed
+cd ~/CipherPulse && python3 -m src.download_safe_music --source jamendo  # Jamendo upgrade
 ```
 
 ---
