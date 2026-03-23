@@ -1,17 +1,25 @@
 """
-text_card_assembler.py — Pillow + FFmpeg text card Short assembler.
+text_card_assembler.py — Premium news-card Short assembler (v2).
 
-Produces 8-15 second vertical videos (1080×1920) from 3 slides:
-  Slide 0 (HOOK):   ALL CAPS headline — most shocking specific fact
-  Slide 1 (DETAIL): 2-3 sentence summary — white text, numbers in cyan
-  Slide 2 (CTA):    Provocative question or follow prompt — cyan text
+Architecture:
+  1. Pillow renders each slide as a complete static 1080×1920 PNG
+     (background frame + 65% dark overlay + styled text in one pass).
+  2. FFmpeg applies Ken Burns zoom (zoompan z=1.0→1.05) to slides 0 and 1
+     to add cinematic motion.  Slide 2 is a static void-black brand card.
+  3. Three .mp4 clips are stitched with FFmpeg xfade crossfades + music.
 
-Each slide uses a background frame extracted from a Pexels video clip (via
-footage_downloader), overlaid with a semi-transparent black mask so text
-stays readable over any footage.
+Why Pillow for text composition (not FFmpeg drawtext):
+  The premium look requires per-word color switching (numbers/names in cyan),
+  letter-spaced category labels, and multi-line wrapping with precise shadows.
+  FFmpeg drawtext cannot switch color mid-line. Pillow handles this cleanly.
+  The Ken Burns motion is pure FFmpeg — it applies to the entire composited
+  frame, giving the cinematic effect without needing text to be a separate layer.
 
-Slides are stitched with 0.5s crossfade transitions and background music at
-30% volume (louder than voiceover videos since there is no voice to compete with).
+Slide structure:
+  Slide 0 (HOOK)  — 4s: [category label] · [separator] · [ALL CAPS headline]
+  Slide 1 (DETAIL)— 5s: [detail paragraph, numbers in cyan] · [source attribution]
+  Slide 2 (CTA)   — 3s: [decorative lines] · [Follow @CipherPulse] · [tagline]
+  Total: 4+5+3 - 2×0.5s crossfade = 11 seconds.
 
 Called by orchestrator.py when topic.format == 7 (Text Card).
 """
@@ -42,36 +50,39 @@ logging.basicConfig(
 )
 log = logging.getLogger("text_card_assembler")
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-
+# ── Dimensions ────────────────────────────────────────────────────────────────
 SLIDE_W = 1080
 SLIDE_H = 1920
+SAFE_W  = int(SLIDE_W * 0.82)          # 885px — text stays inside this width
+SAFE_X  = (SLIDE_W - SAFE_W) // 2      # 97px left/right margin
 
-# Safe zone: text stays in the center 80% of the frame width
-SAFE_W   = int(SLIDE_W * 0.80)   # 864px
-SAFE_X   = (SLIDE_W - SAFE_W) // 2  # 108px left margin
+# ── Timing ────────────────────────────────────────────────────────────────────
+SLIDE_DURATIONS    = [4.0, 5.0, 3.0]   # seconds per slide (total = 12s raw)
+CROSSFADE_DURATION = 0.5               # seconds for xfade transition
+FPS                = 30
+ZOOM_START         = 1.00              # Ken Burns start (full frame)
+ZOOM_END           = 1.05              # Ken Burns end   (5% zoom in)
+MUSIC_VOLUME       = 0.35              # louder than voiceover — no voice to compete
 
-# How long each slide is displayed (seconds)
-SLIDE_DURATIONS: list[float] = [4.0, 5.0, 4.0]
-CROSSFADE_DURATION = 0.5
-MUSIC_VOLUME       = 0.30   # louder than voiceover videos (0.22)
+# ── Brand colours ─────────────────────────────────────────────────────────────
+VOID_BLACK  = (6,   6,   9)            # #060609
+CYAN        = (0,   242, 234)          # #00F2EA
+WHITE       = (232, 230, 227)          # #E8E6E3
+BLACK       = (0,   0,   0)
+OVERLAY_A   = int(0.65 * 255)          # 65% black overlay = 166/255
+CYAN_40     = (0,   242, 234, 102)     # cyan at 40% opacity (separator line)
+WHITE_50    = (232, 230, 227, 128)     # white at 50% opacity (source text)
 
-# Brand colours (exact hex from CLAUDE.md)
-VOID_BLACK   = (6,   6,   9)
-CYAN         = (0,   242, 234)   # #00F2EA
-WHITE        = (232, 230, 227)   # #E8E6E3
-OVERLAY_RGBA = (0,   0,   0,   153)  # 60% opacity black
+# ── Font sizes ────────────────────────────────────────────────────────────────
+FONT_CATEGORY  = 24
+FONT_HEADLINE  = 68
+FONT_DETAIL    = 36
+FONT_SOURCE    = 18
+FONT_CTA_MAIN  = 62
+FONT_CTA_SUB   = 28
 
-# Font sizes per slide role
-FONT_SIZE_HEADLINE = 66   # Slide 0 — large bold headline
-FONT_SIZE_DETAIL   = 40   # Slide 1 — detail paragraph
-FONT_SIZE_CTA      = 50   # Slide 2 — CTA / brand line
-
-# Line height multiplier
-LINE_SPACING_FACTOR = 1.35
-
-# Regex: words that should render in CYAN on the detail slide
-# Matches numbers, dollar amounts, percentages, large-number abbreviations
+# ── Regex: highlight words that should appear in CYAN ─────────────────────────
+# Matches: $35M, 153, 18,000, 60%, 2013, $800, 1.5B, etc.
 HIGHLIGHT_RE = re.compile(
     r"^\$?[\d][\d,. ]*[%BKMGT]?$"
     r"|^\d+[BKMGT]$"
@@ -79,138 +90,104 @@ HIGHLIGHT_RE = re.compile(
     re.IGNORECASE,
 )
 
-ASSETS_DIR = Path(__file__).parent.parent / "assets"
-FONTS_DIR  = ASSETS_DIR / "fonts"
-MUSIC_DIR  = ASSETS_DIR / "music"
-
-OSWALD_FONT    = FONTS_DIR / "Oswald-Variable.ttf"
-BEBAS_FONT     = FONTS_DIR / "BebasNeue-Regular.ttf"
+# ── Asset paths ───────────────────────────────────────────────────────────────
+ASSETS_DIR  = Path(__file__).parent.parent / "assets"
+FONTS_DIR   = ASSETS_DIR / "fonts"
+MUSIC_DIR   = ASSETS_DIR / "music"
+OSWALD_FONT = FONTS_DIR / "Oswald-Variable.ttf"
+BEBAS_FONT  = FONTS_DIR / "BebasNeue-Regular.ttf"
 
 
 # ── Font loader ───────────────────────────────────────────────────────────────
 
-def _load_font(size: int) -> ImageFont.FreeTypeFont:
-    """Load Oswald Variable at the given size, fall back to Bebas Neue."""
-    for font_path in (OSWALD_FONT, BEBAS_FONT):
-        if font_path.exists():
-            try:
-                return ImageFont.truetype(str(font_path), size=size)
-            except Exception:
-                continue
-    log.warning("No custom font found — using Pillow default")
+def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    """
+    Load Oswald Variable at the given size.
+
+    For headlines (bold=True) we try to set the wght axis to 700 (Bold).
+    For body text (bold=False) the default axis value (~400 Regular) is used.
+    Falls back to Bebas Neue, then Pillow's built-in default.
+    """
+    if OSWALD_FONT.exists():
+        font = ImageFont.truetype(str(OSWALD_FONT), size=size)
+        if bold:
+            for method, arg in [
+                ("set_variation_by_axes", {"wght": 700}),
+                ("set_variation_by_name", "Bold"),
+            ]:
+                try:
+                    getattr(font, method)(arg)
+                    break
+                except Exception:
+                    continue
+        return font
+    if BEBAS_FONT.exists():
+        return ImageFont.truetype(str(BEBAS_FONT), size=size)
+    log.warning("No custom font found — using Pillow default (text will look basic)")
     return ImageFont.load_default()
 
 
-# ── Background helpers ────────────────────────────────────────────────────────
-
-def _extract_frame(clip_path: Path, output_path: Path, timestamp: float = 1.0) -> None:
-    """
-    Extract a single frame from a video clip at the given timestamp.
-
-    Uses FFmpeg -ss for fast seeking. The frame is written as a PNG to
-    output_path. This gives us a high-quality still to use as a slide
-    background without any additional downloads.
-
-    Args:
-        clip_path:   Path to the source MP4 clip
-        output_path: Where to write the extracted PNG frame
-        timestamp:   Seek position in seconds (default 1.0 avoids black frames)
-    """
-    result = subprocess.run(
-        [
-            "ffmpeg", "-y",
-            "-ss", str(timestamp),
-            "-i", str(clip_path),
-            "-frames:v", "1",
-            "-q:v", "2",
-            str(output_path),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Frame extraction failed for {clip_path.name}: {result.stderr[-300:]}")
-
+# ── Pillow helpers ────────────────────────────────────────────────────────────
 
 def _resize_fill(img: Image.Image, w: int, h: int) -> Image.Image:
-    """
-    Scale an image so it fills w×h exactly, center-cropping any excess.
-
-    'Fill' scaling (as opposed to 'fit' scaling) ensures the entire canvas
-    is covered — no letterboxing or pillarboxing. Used so our dark overlay
-    and text always have a full-bleed background image underneath.
-    """
-    src_w, src_h = img.size
-    scale = max(w / src_w, h / src_h)
-    new_w = int(src_w * scale)
-    new_h = int(src_h * scale)
-    img = img.resize((new_w, new_h), Image.LANCZOS)
-    # Center crop
-    left = (new_w - w) // 2
-    top  = (new_h - h) // 2
+    """Scale and center-crop img so it fills w×h with no letterboxing."""
+    sw, sh = img.size
+    scale  = max(w / sw, h / sh)
+    nw, nh = int(sw * scale), int(sh * scale)
+    img    = img.resize((nw, nh), Image.LANCZOS)
+    left   = (nw - w) // 2
+    top    = (nh - h) // 2
     return img.crop((left, top, left + w, top + h))
 
 
-# ── Text rendering helpers ────────────────────────────────────────────────────
+def _make_draw(size: tuple[int, int] = (SLIDE_W, SLIDE_H)) -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    """Create a blank RGBA canvas and its Draw object."""
+    img  = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    return img, draw
 
-def _wrap_text(
-    text: str,
-    font: ImageFont.FreeTypeFont,
-    max_width: int,
-) -> list[str]:
-    """
-    Word-wrap text so each line fits within max_width pixels.
 
-    Uses a throwaway 1×1 ImageDraw object to measure text widths without
-    rendering anything. Returns a list of wrapped line strings.
-    """
+def _wrap(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
+    """Word-wrap text to fit within max_w pixels. Returns list of line strings."""
     tmp  = Image.new("RGB", (1, 1))
     draw = ImageDraw.Draw(tmp)
-
-    words   = text.split()
-    lines:  list[str] = []
-    current: list[str] = []
-
+    words, lines, cur = text.split(), [], []
     for word in words:
-        test = " ".join(current + [word])
-        bbox = draw.textbbox((0, 0), test, font=font)
-        if bbox[2] - bbox[0] > max_width and current:
-            lines.append(" ".join(current))
-            current = [word]
+        test = " ".join(cur + [word])
+        if draw.textbbox((0, 0), test, font=font)[2] > max_w and cur:
+            lines.append(" ".join(cur))
+            cur = [word]
         else:
-            current.append(word)
-    if current:
-        lines.append(" ".join(current))
+            cur.append(word)
+    if cur:
+        lines.append(" ".join(cur))
     return lines
 
 
-def _line_width(draw: ImageDraw.ImageDraw, line: str, font: ImageFont.FreeTypeFont) -> int:
-    """Return the pixel width of a single text line."""
-    bbox = draw.textbbox((0, 0), line, font=font)
-    return bbox[2] - bbox[0]
+def _lw(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> int:
+    """Pixel width of a text string."""
+    return draw.textbbox((0, 0), text, font=font)[2]
 
 
-def _line_height(font: ImageFont.FreeTypeFont) -> int:
-    """Return the pixel height of one line for the given font."""
+def _lh(font: ImageFont.FreeTypeFont) -> int:
+    """Pixel height of one line for the given font."""
     tmp  = Image.new("RGB", (1, 1))
-    draw = ImageDraw.Draw(tmp)
-    bbox = draw.textbbox((0, 0), "Ag", font=font)
-    return bbox[3] - bbox[1]
+    d    = ImageDraw.Draw(tmp)
+    b    = d.textbbox((0, 0), "Ag", font=font)
+    return b[3] - b[1]
 
 
-def _draw_shadow(
-    draw: ImageDraw.ImageDraw,
-    text: str,
-    x: int,
-    y: int,
-    font: ImageFont.FreeTypeFont,
-    fill: tuple,
-    shadow_offset: int = 3,
-) -> None:
-    """Draw text with a dark drop-shadow for readability over any background."""
-    shadow = (0, 0, 0)
-    draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow)
-    draw.text((x,                 y                ), text, font=font, fill=fill)
+def _shadow(draw: ImageDraw.ImageDraw, text: str, x: int, y: int,
+            font: ImageFont.FreeTypeFont, fill: tuple, offset: int = 3) -> None:
+    """Draw text with a dark drop-shadow at pixel offset."""
+    draw.text((x + offset, y + offset), text, font=font, fill=(0, 0, 0, 220))
+    draw.text((x,           y          ), text, font=font, fill=fill)
+
+
+def _block_height(lines: int, font: ImageFont.FreeTypeFont, spacing: float = 1.35) -> int:
+    """Total pixel height of a multi-line text block."""
+    h = _lh(font)
+    return int(h + (lines - 1) * h * spacing)
 
 
 def _draw_centered_block(
@@ -219,333 +196,435 @@ def _draw_centered_block(
     font: ImageFont.FreeTypeFont,
     fill: tuple,
     center_y: int,
+    spacing: float = 1.35,
 ) -> None:
-    """
-    Draw a block of pre-wrapped lines, centered horizontally and vertically.
-
-    center_y is the vertical midpoint of the entire block. Lines are spaced
-    at LINE_SPACING_FACTOR × font height.
-    """
-    lh     = _line_height(font)
-    spacing = int(lh * LINE_SPACING_FACTOR)
-    total_h = spacing * (len(lines) - 1) + lh
-    start_y = center_y - total_h // 2
-
-    for i, line in enumerate(lines):
-        lw = _line_width(draw, line, font)
-        x  = (SLIDE_W - lw) // 2
-        y  = start_y + i * spacing
-        _draw_shadow(draw, line, x, y, font, fill)
+    """Draw pre-wrapped lines centered horizontally, vertically around center_y."""
+    h       = _lh(font)
+    step    = int(h * spacing)
+    total_h = h + (len(lines) - 1) * step
+    y       = center_y - total_h // 2
+    for line in lines:
+        x = (SLIDE_W - _lw(draw, line, font)) // 2
+        _shadow(draw, line, x, y, font, fill)
+        y += step
 
 
-def _draw_detail_block(
+def _draw_highlighted_block(
     draw: ImageDraw.ImageDraw,
     lines: list[str],
     font: ImageFont.FreeTypeFont,
     center_y: int,
+    spacing: float = 1.35,
 ) -> None:
     """
-    Draw the detail slide text with per-word cyan highlighting for numbers.
+    Draw a text block with per-word cyan highlighting for numbers.
 
-    Renders word-by-word: each word is checked against HIGHLIGHT_RE and
-    drawn in CYAN if it looks like a number/amount/percentage, WHITE otherwise.
-    This makes key facts visually pop without any manual markup.
+    Each word is checked against HIGHLIGHT_RE.  Numbers, dollar amounts,
+    and percentages render in CYAN; all other words render in WHITE.
+    Words are drawn individually to track x-position; the line is
+    pre-measured to compute the centering start_x.
     """
-    lh      = _line_height(font)
-    spacing = int(lh * LINE_SPACING_FACTOR)
-    total_h = spacing * (len(lines) - 1) + lh
+    h       = _lh(font)
+    step    = int(h * spacing)
+    total_h = h + (len(lines) - 1) * step
     start_y = center_y - total_h // 2
+    space_w = _lw(draw, " ", font)
 
-    # We need a temporary draw to measure word widths
     for i, line in enumerate(lines):
-        y = start_y + i * spacing
-
-        # Measure the full line to compute centered start_x
-        lw      = _line_width(draw, line, font)
-        x       = (SLIDE_W - lw) // 2
-        words   = line.split()
-
-        for j, word in enumerate(words):
-            is_highlight = bool(HIGHLIGHT_RE.match(word.strip(".,!?:;\"'-")))
-            color = CYAN if is_highlight else WHITE
-            _draw_shadow(draw, word, x, y, font, color)
-            word_bbox = draw.textbbox((0, 0), word, font=font)
-            space_bbox = draw.textbbox((0, 0), " ", font=font)
-            x += (word_bbox[2] - word_bbox[0]) + (space_bbox[2] - space_bbox[0])
+        y       = start_y + i * step
+        line_w  = _lw(draw, line, font)
+        x       = (SLIDE_W - line_w) // 2
+        for j, word in enumerate(line.split()):
+            is_number = bool(HIGHLIGHT_RE.match(word.strip(".,!?:;\"'-")))
+            color     = (*CYAN, 255) if is_number else (*WHITE, 255)
+            _shadow(draw, word, x, y, font, color)
+            x += _lw(draw, word, font) + space_w
 
 
-# ── Slide builders ────────────────────────────────────────────────────────────
-
-def _make_slide_0(
-    bg_frame: Path,
-    headline: str,
-    tmp_dir: Path,
-) -> Path:
+def _draw_letter_spaced(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    fill: tuple,
+    center_x: int,
+    y: int,
+    spacing: int = 5,
+) -> None:
     """
-    Slide 0 — HOOK: large ALL CAPS headline, centered on dark background.
+    Draw text with extra letter spacing, centered around center_x.
+
+    Pillow has no native letter-spacing.  We measure each character,
+    compute the total width, then draw char-by-char with `spacing` px gap.
+    """
+    char_widths = [_lw(draw, c, font) for c in text]
+    total_w     = sum(char_widths) + spacing * (len(text) - 1)
+    x           = center_x - total_w // 2
+    for char, cw in zip(text, char_widths):
+        _shadow(draw, char, x, y, font, fill, offset=2)
+        x += cw + spacing
+
+
+# ── Background preparation ────────────────────────────────────────────────────
+
+def _extract_frame(clip_path: Path, out_path: Path, t: float = 1.0) -> None:
+    """Extract one frame from clip_path at timestamp t into out_path (PNG)."""
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-ss", str(t), "-i", str(clip_path),
+         "-frames:v", "1", "-q:v", "2", str(out_path)],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"Frame extract failed ({clip_path.name}): {r.stderr[-300:]}")
+
+
+def _composited_background(frame_path: Path) -> Image.Image:
+    """Load a clip frame, fill-crop to 1080×1920, apply the 65% dark overlay."""
+    bg  = _resize_fill(Image.open(frame_path).convert("RGBA"), SLIDE_W, SLIDE_H)
+    ovl = Image.new("RGBA", (SLIDE_W, SLIDE_H), (0, 0, 0, OVERLAY_A))
+    return Image.alpha_composite(bg, ovl)
+
+
+# ── Per-slide PNG renderers ───────────────────────────────────────────────────
+
+def _render_slide0(bg_frame: Path, headline: str, category: str) -> Image.Image:
+    """
+    Slide 0 — HOOK.
+
+    Layout (top → bottom):
+      • Category label  — cyan, 24 px, letter-spaced, ALL CAPS
+      • Thin separator  — 200 px wide cyan line, 40 % opacity
+      • Headline        — 68 px Oswald Bold, ALL CAPS, white/cyan on numbers
+                          centred vertically in the frame
+
+    The whole three-part block (category + sep + headline) is vertically
+    centred together so the composition feels balanced.
+    """
+    base      = _composited_background(bg_frame)
+    overlay, draw = _make_draw()
+
+    cat_font  = _load_font(FONT_CATEGORY)
+    hed_font  = _load_font(FONT_HEADLINE, bold=True)
+
+    cat_text  = category.upper()
+    hed_lines = _wrap(headline.upper(), hed_font, SAFE_W)
+
+    # Measure heights
+    cat_h     = _lh(cat_font)
+    sep_gap   = 18          # px between category and separator
+    sep_hed   = 24          # px between separator and headline
+    hed_h     = _block_height(len(hed_lines), hed_font)
+
+    total_h   = cat_h + sep_gap + 2 + sep_hed + hed_h
+    block_top = SLIDE_H // 2 - total_h // 2  # vertically centred
+
+    # ─ Category label ─────────────────────────────────────────────────────────
+    _draw_letter_spaced(draw, cat_text, cat_font, (*CYAN, 255),
+                        SLIDE_W // 2, block_top, spacing=5)
+
+    # ─ Separator line ─────────────────────────────────────────────────────────
+    sep_y  = block_top + cat_h + sep_gap
+    sep_w  = 200
+    sep_x  = (SLIDE_W - sep_w) // 2
+    draw.rectangle([sep_x, sep_y, sep_x + sep_w, sep_y + 2], fill=CYAN_40)
+
+    # ─ Headline ───────────────────────────────────────────────────────────────
+    hed_top    = sep_y + 2 + sep_hed
+    hed_center = hed_top + hed_h // 2
+    _draw_highlighted_block(draw, hed_lines, hed_font, hed_center)
+
+    base.alpha_composite(overlay)
+    return base.convert("RGB")
+
+
+def _render_slide1(bg_frame: Path, detail: str, source: str) -> Image.Image:
+    """
+    Slide 1 — DETAIL.
 
     Layout:
-      - Full-bleed background image (from footage clip)
-      - 60% black overlay for text readability
-      - Small cyan accent line at top (5px, 40% frame width)
-      - Headline text: FONT_SIZE_HEADLINE, white, centered vertically
-      - Small "CIPHERPULSE" watermark at bottom right (30% opacity)
+      • Detail paragraph — 36 px Oswald, white with numbers in cyan,
+                           vertically centred slightly above midpoint
+      • Source credit    — 18 px, 50 % opacity white, near bottom
     """
-    img = _resize_fill(Image.open(bg_frame).convert("RGB"), SLIDE_W, SLIDE_H)
+    base          = _composited_background(bg_frame)
+    overlay, draw = _make_draw()
 
-    # Dark overlay
-    overlay = Image.new("RGBA", img.size, OVERLAY_RGBA)
-    img_rgba = img.convert("RGBA")
-    img_rgba = Image.alpha_composite(img_rgba, overlay)
-    img = img_rgba.convert("RGB")
+    det_font = _load_font(FONT_DETAIL)
+    src_font = _load_font(FONT_SOURCE)
 
-    draw = ImageDraw.Draw(img)
+    det_lines = _wrap(detail, det_font, SAFE_W)
+    det_center = int(SLIDE_H * 0.47)   # slightly above centre for visual balance
 
-    # Cyan accent bar at top
-    bar_w  = int(SLIDE_W * 0.40)
-    bar_h  = 5
-    bar_x  = (SLIDE_W - bar_w) // 2
-    bar_y  = 80
-    draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=CYAN)
+    _draw_highlighted_block(draw, det_lines, det_font, det_center)
 
-    # Headline text
-    font  = _load_font(FONT_SIZE_HEADLINE)
-    lines = _wrap_text(headline.upper(), font, SAFE_W)
-    _draw_centered_block(draw, lines, font, WHITE, SLIDE_H // 2)
+    # Source attribution
+    src_text = f"SOURCE: {source.upper()}"
+    src_x    = (SLIDE_W - _lw(draw, src_text, src_font)) // 2
+    src_y    = SLIDE_H - 140
+    draw.text((src_x + 2, src_y + 2), src_text, font=src_font, fill=(0, 0, 0, 160))
+    draw.text((src_x,     src_y    ), src_text, font=src_font, fill=WHITE_50)
 
-    # Watermark — "CIPHERPULSE" small at bottom right, low opacity
-    wm_font = _load_font(28)
-    wm_text = "CIPHERPULSE"
-    wm_bbox = draw.textbbox((0, 0), wm_text, font=wm_font)
-    wm_w    = wm_bbox[2] - wm_bbox[0]
-    wm_x    = SLIDE_W - wm_w - 40
-    wm_y    = SLIDE_H - 80
-    # Semi-transparent watermark via a separate RGBA layer
-    wm_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    wm_draw  = ImageDraw.Draw(wm_layer)
-    wm_draw.text((wm_x, wm_y), wm_text, font=wm_font, fill=(*CYAN, 77))  # 30% opacity
-    img = Image.alpha_composite(img.convert("RGBA"), wm_layer).convert("RGB")
-
-    out = tmp_dir / "slide_0.png"
-    img.save(out, "PNG")
-    log.info(f"Slide 0 rendered: {out.name}")
-    return out
+    base.alpha_composite(overlay)
+    return base.convert("RGB")
 
 
-def _make_slide_1(
-    bg_frame: Path,
-    detail: str,
-    tmp_dir: Path,
-) -> Path:
+def _render_slide2() -> Image.Image:
     """
-    Slide 1 — DETAIL: 2-3 sentence paragraph, numbers highlighted in cyan.
+    Slide 2 — BRAND CTA.
 
-    Layout:
-      - Full-bleed background + 60% overlay
-      - Detail text centered, FONT_SIZE_DETAIL, word-level cyan highlights
+    Fixed content on void-black background:
+      • Decorative cyan line (top)
+      • "Follow @CipherPulse"  — large cyan text
+      • "Daily Cyber Threats & AI News"  — small white text
+      • Decorative cyan line (bottom)
+
+    No background image; no Ken Burns (brand slide is deliberately static).
     """
-    img = _resize_fill(Image.open(bg_frame).convert("RGB"), SLIDE_W, SLIDE_H)
-    overlay = Image.new("RGBA", img.size, OVERLAY_RGBA)
-    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    img, draw = _make_draw()
 
-    draw = ImageDraw.Draw(img)
-    font  = _load_font(FONT_SIZE_DETAIL)
-    lines = _wrap_text(detail, font, SAFE_W)
-    _draw_detail_block(draw, lines, font, SLIDE_H // 2)
+    # Void-black fill
+    draw.rectangle([0, 0, SLIDE_W, SLIDE_H], fill=(*VOID_BLACK, 255))
 
-    out = tmp_dir / "slide_1.png"
-    img.save(out, "PNG")
-    log.info(f"Slide 1 rendered: {out.name}")
-    return out
+    main_font = _load_font(FONT_CTA_MAIN, bold=True)
+    sub_font  = _load_font(FONT_CTA_SUB)
+
+    main_text = "Follow @CipherPulse"
+    sub_text  = "Daily Cyber Threats & AI News"
+
+    main_h = _lh(main_font)
+    sub_h  = _lh(sub_font)
+    gap    = 28
+    line_h = 3
+    line_w = 280
+    line_gap_outer = 55   # gap between outer lines and text block
+
+    total_h  = line_h + line_gap_outer + main_h + gap + sub_h + line_gap_outer + line_h
+    block_y  = SLIDE_H // 2 - total_h // 2
+
+    lx = (SLIDE_W - line_w) // 2
+
+    # Top line
+    draw.rectangle([lx, block_y, lx + line_w, block_y + line_h], fill=(*CYAN, 255))
+
+    # "Follow @CipherPulse"
+    my = block_y + line_h + line_gap_outer
+    mx = (SLIDE_W - _lw(draw, main_text, main_font)) // 2
+    _shadow(draw, main_text, mx, my, main_font, (*CYAN, 255), offset=3)
+
+    # Tagline
+    sy = my + main_h + gap
+    sx = (SLIDE_W - _lw(draw, sub_text, sub_font)) // 2
+    _shadow(draw, sub_text, sx, sy, sub_font, (*WHITE, 255), offset=2)
+
+    # Bottom line
+    by2 = sy + sub_h + line_gap_outer
+    draw.rectangle([lx, by2, lx + line_w, by2 + line_h], fill=(*CYAN, 255))
+
+    return img.convert("RGB")
 
 
-def _make_slide_2(
-    bg_frame: Path,
-    cta: str,
-    tmp_dir: Path,
-) -> Path:
+# ── FFmpeg video generators ───────────────────────────────────────────────────
+
+def _make_motion_clip(slide_img: Image.Image, duration: float, out: Path) -> None:
     """
-    Slide 2 — CTA: provocative question or brand prompt in CipherPulse cyan.
+    Produce a video clip from a still image using FFmpeg zoompan (Ken Burns).
 
-    Layout:
-      - Full-bleed background + 60% overlay
-      - CTA text: FONT_SIZE_CTA, CYAN color, centered vertically
-      - Cyan accent bar at bottom (mirrors slide 0 top accent)
+    Zoompan explanation:
+      The filter takes a still (or video) input and produces N output frames,
+      where each frame shows a progressively smaller viewport of the source —
+      effectively zooming in.  The key parameters:
+
+        z  = zoom level per frame.  We use min(zoom + inc, ZOOM_END) so zoom
+             increases from 1.0 to 1.05 linearly over the clip duration, then
+             stays capped at 1.05.  `zoom` refers to the PREVIOUS frame's value.
+        x  = top-left x of the crop window in the SOURCE frame.
+             iw/2 - iw/zoom/2  centres the crop as zoom grows.
+        y  = same vertically.
+        d  = total output frames (must match input length exactly).
+        s  = output frame size.
+        fps= output framerate.
+
+    With a 1080×1920 source at z=1.0: x=0, y=0 (full frame shown).
+    At z=1.05: crop window is 1029×1829, centred at (25.7, 45.7) — 5% zoomed in.
+
+    The source image is pre-rendered at exactly 1080×1920 by Pillow, so no
+    additional scaling step is needed inside the filter graph.
     """
-    img = _resize_fill(Image.open(bg_frame).convert("RGB"), SLIDE_W, SLIDE_H)
-    overlay = Image.new("RGBA", img.size, OVERLAY_RGBA)
-    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    n   = int(duration * FPS)
+    inc = (ZOOM_END - ZOOM_START) / max(n, 1)
 
-    draw = ImageDraw.Draw(img)
-    font  = _load_font(FONT_SIZE_CTA)
-    lines = _wrap_text(cta, font, SAFE_W)
-    _draw_centered_block(draw, lines, font, CYAN, SLIDE_H // 2)
+    # Write the slide PNG to a temp file so FFmpeg can read it
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+    try:
+        slide_img.save(tmp_path, "PNG")
 
-    # Cyan accent bar at bottom
-    bar_w = int(SLIDE_W * 0.40)
-    bar_h = 5
-    bar_x = (SLIDE_W - bar_w) // 2
-    bar_y = SLIDE_H - 100
-    draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=CYAN)
+        vf = (
+            f"zoompan="
+            f"z='min(zoom+{inc:.8f},{ZOOM_END})':"
+            f"x='iw/2-(iw/zoom/2)':"
+            f"y='ih/2-(ih/zoom/2)':"
+            f"d={n}:s={SLIDE_W}x{SLIDE_H}:fps={FPS},"
+            f"format=yuv420p"
+        )
 
-    out = tmp_dir / "slide_2.png"
-    img.save(out, "PNG")
-    log.info(f"Slide 2 rendered: {out.name}")
-    return out
+        cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-framerate", str(FPS), "-t", str(duration),
+            "-i", str(tmp_path),
+            "-vf", vf,
+            "-c:v", "libx264", "-profile:v", "high",
+            "-pix_fmt", "yuv420p", "-r", str(FPS), "-t", str(duration),
+            str(out),
+        ]
+        log.debug(f"zoompan cmd: {' '.join(cmd)}")
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            log.error(f"zoompan stderr:\n{r.stderr[-800:]}")
+            raise RuntimeError(f"Ken Burns clip failed (exit {r.returncode})")
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
-# ── Music selection ───────────────────────────────────────────────────────────
+def _make_static_clip(slide_img: Image.Image, duration: float, out: Path) -> None:
+    """
+    Produce a static video clip (no motion) from a still image.
+    Used for Slide 2 (brand CTA) which intentionally has no Ken Burns.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+    try:
+        slide_img.save(tmp_path, "PNG")
+        cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-framerate", str(FPS), "-t", str(duration),
+            "-i", str(tmp_path),
+            "-vf", f"scale={SLIDE_W}:{SLIDE_H},format=yuv420p",
+            "-c:v", "libx264", "-profile:v", "high",
+            "-pix_fmt", "yuv420p", "-r", str(FPS), "-t", str(duration),
+            str(out),
+        ]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(f"Static clip failed (exit {r.returncode}): {r.stderr[-300:]}")
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+# ── Music picker ──────────────────────────────────────────────────────────────
 
 def _pick_music() -> Optional[Path]:
-    """Return a random music track from assets/music/, or None if none exist."""
+    """Return a random track from assets/music/, or None if the dir is empty."""
     tracks = list(MUSIC_DIR.glob("*.mp3"))
     if not tracks:
-        log.warning("No music tracks found in assets/music/ — building silent video")
+        log.warning("No music in assets/music/ — producing silent video")
         return None
     return random.choice(tracks)
 
 
-# ── FFmpeg stitcher ───────────────────────────────────────────────────────────
+# ── FFmpeg xfade stitcher ─────────────────────────────────────────────────────
 
-def _stitch_slides(
-    slide_pngs: list[Path],
-    music_path: Optional[Path],
-    output_path: Path,
-    durations: list[float] = SLIDE_DURATIONS,
-    crossfade: float = CROSSFADE_DURATION,
-) -> None:
+def _stitch(clips: list[Path], music: Optional[Path], output: Path) -> None:
     """
-    Combine slide PNGs into a video with crossfade transitions and music.
+    Concatenate clip videos with crossfade transitions and background music.
 
-    FFmpeg approach:
-      - Each PNG is fed as a still image input with -loop 1 -t <duration>
-      - filter_complex chains pairs of slides through the xfade filter
-      - xfade transition=fade, offset = cumulative duration minus crossfade
-      - Music is trimmed to video length with a 1s fade-out at the end
+    xfade offset calculation:
+      Each xfade starts just before the current clip ends.  For clips with
+      durations [4, 5, 3] and crossfade=0.5:
 
-    The xfade 'offset' parameter is the time in the OUTPUT stream where the
-    transition starts — it must equal the sum of all previous slide durations
-    minus any prior crossfade durations, minus the crossfade duration itself.
+        xfade #0→#1: offset = 4.0 − 0.5 = 3.5 s
+        xfade #1→#2: offset = (4.0 + 5.0 − 0.5) − 0.5 = 8.0 s
+        total output = 4 + 5 + 3 − 2×0.5 = 11.0 s
 
-    Example for 3 slides [4.0, 5.0, 4.0] with 0.5s crossfade:
-      xfade #1: offset = 4.0 - 0.5 = 3.5  (start fading at t=3.5)
-      xfade #2: offset = (4.0 + 5.0 - 0.5) - 0.5 = 8.0
-      Total duration = 4.0 + 5.0 + 4.0 - 2×0.5 = 12.0s
+    Audio: music is trimmed to the total duration with a 1s fade-out at the end.
     """
-    n = len(slide_pngs)
-    assert n == len(durations), "slide_pngs and durations must have equal length"
+    n     = len(clips)
+    total = sum(SLIDE_DURATIONS) - CROSSFADE_DURATION * (n - 1)
+    fade  = max(0.0, total - 1.0)
 
-    # Build ffmpeg input arguments: -loop 1 -t <dur> -i <path> for each slide
-    input_args: list[str] = []
-    for i, (png, dur) in enumerate(zip(slide_pngs, durations)):
-        input_args += ["-loop", "1", "-t", str(dur), "-i", str(png)]
+    inputs: list[str] = []
+    for c in clips:
+        inputs += ["-i", str(c)]
+    if music:
+        inputs += ["-i", str(music)]
 
-    # Music input (optional)
-    has_music = music_path is not None
-    if has_music:
-        input_args += ["-i", str(music_path)]
-
-    # Compute total video duration
-    total_dur = sum(durations) - crossfade * (n - 1)
-    fade_out_start = max(0.0, total_dur - 1.0)
-
-    # Build filter_complex
-    # Step 1: scale + fps each slide stream
-    scale_filters = []
-    for i in range(n):
-        scale_filters.append(
-            f"[{i}:v]scale={SLIDE_W}:{SLIDE_H}:force_original_aspect_ratio=increase,"
-            f"crop={SLIDE_W}:{SLIDE_H},setsar=1,fps=30[v{i}]"
-        )
-
-    # Step 2: chain xfade filters
-    # xfade_filters[k] connects [left][right] → [xk]
-    xfade_filters = []
-    offsets: list[float] = []
-    cumulative = durations[0]
+    # Build xfade chain
+    xfade_parts: list[str] = []
+    cumulative = SLIDE_DURATIONS[0]
     for k in range(1, n):
-        offset = cumulative - crossfade
-        offsets.append(offset)
-        left  = f"[x{k - 1}]" if k > 1 else f"[v0]"
-        right = f"[v{k}]"
-        out   = f"[vout]" if k == n - 1 else f"[x{k}]"
-        xfade_filters.append(
-            f"{left}{right}xfade=transition=fade:duration={crossfade}:offset={offset:.3f}{out}"
+        offset = cumulative - CROSSFADE_DURATION
+        left   = "[0:v]"  if k == 1 else f"[x{k - 1}]"
+        right  = f"[{k}:v]"
+        out_   = "[vout]" if k == n - 1 else f"[x{k}]"
+        xfade_parts.append(
+            f"{left}{right}xfade=transition=fade:"
+            f"duration={CROSSFADE_DURATION}:offset={offset:.3f}{out_}"
         )
-        cumulative += durations[k] - crossfade
+        cumulative += SLIDE_DURATIONS[k] - CROSSFADE_DURATION
 
-    # Step 3: audio filter (trim + fade out)
-    audio_filters = []
-    if has_music:
-        music_idx = n  # music is the last input
-        audio_filters.append(
-            f"[{music_idx}:a]volume={MUSIC_VOLUME},"
-            f"afade=t=out:st={fade_out_start:.3f}:d=1.0[aout]"
+    parts = list(xfade_parts)
+    if music:
+        parts.append(
+            f"[{n}:a]volume={MUSIC_VOLUME},"
+            f"afade=t=out:st={fade:.3f}:d=1.0[aout]"
         )
 
-    # Assemble full filter_complex string
-    all_filters = scale_filters + xfade_filters + audio_filters
-    filter_complex = "; ".join(all_filters)
-
-    # Build the full ffmpeg command
-    cmd = ["ffmpeg", "-y"] + input_args + [
-        "-filter_complex", filter_complex,
+    cmd = ["ffmpeg", "-y"] + inputs + [
+        "-filter_complex", "; ".join(parts),
         "-map", "[vout]",
     ]
-    if has_music:
+    if music:
         cmd += ["-map", "[aout]"]
     cmd += [
-        "-c:v", "libx264",
-        "-profile:v", "high",
-        "-pix_fmt", "yuv420p",
-        "-r", "30",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", str(FPS),
+        "-c:a", "aac",     "-b:a", "128k",
+        "-shortest", str(output),
     ]
-    if has_music:
-        cmd += ["-c:a", "aac", "-b:a", "128k"]
-    cmd += ["-shortest", str(output_path)]
 
-    log.info(f"FFmpeg stitching {n} slides → {output_path.name} ({total_dur:.1f}s)")
-    log.debug(f"Command: {' '.join(cmd)}")
+    log.info(f"Stitching {n} clips → {output.name}  ({total:.1f}s total)")
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        log.error(f"Stitch stderr:\n{r.stderr[-800:]}")
+        raise RuntimeError(f"Stitch failed (exit {r.returncode})")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        log.error(f"FFmpeg stderr:\n{result.stderr[-1000:]}")
-        raise RuntimeError(f"FFmpeg text card stitch failed (exit {result.returncode})")
-
-    log.info(f"Text card assembled: {output_path.name} ({output_path.stat().st_size / 1e6:.1f} MB)")
+    log.info(f"Final video: {output.name}  ({output.stat().st_size / 1e6:.1f} MB)")
 
 
 # ── Public entrypoint ─────────────────────────────────────────────────────────
 
 def assemble_text_card(
-    headline: str,
-    detail: str,
-    cta: str,
+    headline:   str,
+    detail:     str,
+    cta:        str,
+    category:   str,
+    source:     str,
     clip_paths: list[Path],
     output_dir: Path,
 ) -> Path:
     """
-    Assemble a text card Short from 3 slide backgrounds and text content.
+    Assemble a premium news-card Short from text content + stock footage.
 
-    This function:
-      1. Extracts a still frame from each clip (one per slide)
-      2. Renders each slide as a 1080×1920 PNG using Pillow
-      3. Stitches the slides with FFmpeg xfade + background music
-      4. Saves slide_0.png to output_dir (used as thumbnail by orchestrator)
+    Steps:
+      1. Extract a still frame from each of the first 2 clips (slide 0, 1 bgs).
+      2. Render each slide as a 1080×1920 RGB PNG using Pillow.
+      3. Apply Ken Burns zoompan to slides 0 and 1 → .mp4 clips.
+         Slide 2 is a static brand card — no Ken Burns.
+      4. Save slide_0.png to output_dir for thumbnail generation.
+      5. Stitch 3 clips with FFmpeg xfade + background music.
 
     Args:
-        headline:   Slide 0 text — ALL CAPS headline (under 12 words)
-        detail:     Slide 1 text — 2-3 sentences with numbers highlighted cyan
-        cta:        Slide 2 text — provocative question or follow prompt
-        clip_paths: At least 3 video clip paths for slide backgrounds.
-                    If fewer than 3, available clips are cycled.
+        headline:   Slide 0 — ALL CAPS hook text (under 12 words)
+        detail:     Slide 1 — 2-3 sentence summary
+        cta:        Kept for engagement comment; not rendered on any slide
+        category:   Slide 0 label — e.g. "DATA BREACH", "AI NEWS"
+        source:     Slide 1 attribution — e.g. "Adobe Official Reports"
+        clip_paths: At least 2 stock video clips for slide backgrounds
         output_dir: Where to write video.mp4 and slide_0.png
 
     Returns:
-        Path to the assembled video.mp4
+        Path to video.mp4
 
     Raises:
-        RuntimeError: If FFmpeg fails or no clips are available.
+        RuntimeError: If FFmpeg fails or no clips are provided.
     """
     if not clip_paths:
         raise RuntimeError("assemble_text_card requires at least one clip path")
@@ -553,43 +632,61 @@ def assemble_text_card(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Cycle clips if we have fewer than 3
-    while len(clip_paths) < 3:
-        clip_paths = clip_paths * 2
-    bg_clips = clip_paths[:3]
+    # Ensure we have 2 distinct bg clips (cycle if needed)
+    bg_clips = list(clip_paths[:2])
+    while len(bg_clips) < 2:
+        bg_clips.append(bg_clips[0])
 
-    music_path = _pick_music()
+    music = _pick_music()
 
-    with tempfile.TemporaryDirectory(prefix="cipherpulse_tc_") as tmp_str:
-        tmp_dir = Path(tmp_str)
+    with tempfile.TemporaryDirectory(prefix="cp_tc_") as tmp_str:
+        tmp = Path(tmp_str)
 
-        # Extract one frame per clip
-        frame_paths: list[Path] = []
+        # ── Extract background frames ──────────────────────────────────────────
+        frames: list[Path] = []
         for i, clip in enumerate(bg_clips):
-            frame_path = tmp_dir / f"bg_frame_{i}.png"
+            fp = tmp / f"bg_{i}.png"
             try:
-                _extract_frame(clip, frame_path)
+                _extract_frame(clip, fp)
             except RuntimeError as e:
-                log.warning(f"Frame extraction failed for clip {i} ({clip.name}): {e} — using fallback")
-                # Fallback: solid void-black background
-                fallback = Image.new("RGB", (SLIDE_W, SLIDE_H), VOID_BLACK)
-                fallback.save(frame_path, "PNG")
-            frame_paths.append(frame_path)
+                log.warning(f"Frame extract failed for clip {i}: {e} — using black bg")
+                Image.new("RGB", (SLIDE_W, SLIDE_H), VOID_BLACK).save(fp, "PNG")
+            frames.append(fp)
 
-        # Render slides
-        slides = [
-            _make_slide_0(frame_paths[0], headline, tmp_dir),
-            _make_slide_1(frame_paths[1], detail,   tmp_dir),
-            _make_slide_2(frame_paths[2], cta,       tmp_dir),
-        ]
+        # ── Render slide images (Pillow) ───────────────────────────────────────
+        log.info("Rendering slide 0 (HOOK)…")
+        s0_img = _render_slide0(frames[0], headline, category)
 
-        # Copy slide 0 to output_dir as thumbnail source
-        import shutil
-        shutil.copy2(slides[0], output_dir / "slide_0.png")
-        log.info(f"Slide 0 saved to output_dir for thumbnail use")
+        log.info("Rendering slide 1 (DETAIL)…")
+        s1_img = _render_slide1(frames[1], detail, source)
 
-        # Stitch into video
-        video_path = output_dir / "video.mp4"
-        _stitch_slides(slides, music_path, video_path)
+        log.info("Rendering slide 2 (BRAND CTA)…")
+        s2_img = _render_slide2()
 
-    return video_path
+        # ── Save slide_0.png for thumbnail ────────────────────────────────────
+        s0_img.save(output_dir / "slide_0.png", "PNG")
+        log.info("slide_0.png saved for thumbnail generation")
+
+        # ── Produce per-slide video clips (FFmpeg) ────────────────────────────
+        clip_paths_out: list[Path] = []
+
+        log.info("Encoding slide 0 with Ken Burns zoom…")
+        c0 = tmp / "clip_0.mp4"
+        _make_motion_clip(s0_img, SLIDE_DURATIONS[0], c0)
+        clip_paths_out.append(c0)
+
+        log.info("Encoding slide 1 with Ken Burns zoom…")
+        c1 = tmp / "clip_1.mp4"
+        _make_motion_clip(s1_img, SLIDE_DURATIONS[1], c1)
+        clip_paths_out.append(c1)
+
+        log.info("Encoding slide 2 (static brand card)…")
+        c2 = tmp / "clip_2.mp4"
+        _make_static_clip(s2_img, SLIDE_DURATIONS[2], c2)
+        clip_paths_out.append(c2)
+
+        # ── Stitch with xfade + music ─────────────────────────────────────────
+        video_out = output_dir / "video.mp4"
+        _stitch(clip_paths_out, music, video_out)
+
+    return video_out

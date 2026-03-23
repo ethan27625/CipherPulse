@@ -215,10 +215,12 @@ class TextCardContent:
 
     topic:       str
     title:       str              # SEO title (≤ 70 chars)
+    category:    str              # Slide 0 label — e.g. "DATA BREACH", "AI NEWS"
     headline:    str              # Slide 0 — ALL CAPS headline, ≤ 12 words
     detail:      str              # Slide 1 — 2-3 sentences, ≤ 40 words
-    cta:         str              # Slide 2 — provocative question / follow prompt
+    cta:         str              # Engagement comment question (not rendered on slides)
     visual_tags: list[str]        # 3 keyword phrases for Pexels background clips
+    source:      str = "CipherPulse"   # Slide 1 attribution
     raw_response: str = field(default="", repr=False)
 
     def to_file_content(self) -> str:
@@ -227,6 +229,8 @@ class TextCardContent:
             f"TITLE: {self.title}",
             f"TOPIC: {self.topic}",
             f"FORMAT: 7 — Text Card",
+            f"CATEGORY: {self.category}",
+            f"SOURCE: {self.source}",
             "",
             "── SLIDES ─────────────────────────────────────────────────────────",
             f"[SLIDE 0 — HOOK]",
@@ -234,9 +238,6 @@ class TextCardContent:
             "",
             f"[SLIDE 1 — DETAIL]",
             self.detail,
-            "",
-            f"[SLIDE 2 — CTA]",
-            self.cta,
             "",
             "── VISUAL TAGS ────────────────────────────────────────────────────",
             ", ".join(self.visual_tags),
@@ -255,14 +256,19 @@ CHANNEL IDENTITY
 - Tone: Authoritative, slightly dramatic, educational but accessible
 - Audience: Tech-curious 18-35 year olds
 
-OUTPUT FORMAT (output ONLY this block, no preamble):
+OUTPUT FORMAT (output ONLY this block, no preamble, no extra lines):
 TITLE: <compelling SEO title, under 70 characters>
+CATEGORY: <2-4 words ALL CAPS — e.g. DATA BREACH, AI NEWS, CYBER THREAT, RANSOMWARE, PRIVACY ALERT>
 HEADLINE: <ALL CAPS, maximum 10 words — the most shocking specific fact>
 DETAIL: <2-3 sentences, maximum 40 words — what happened, why it matters>
 CTA: <1 sentence, provocative question — ask about THEIR experience>
+SOURCE: <short attribution — e.g. "Adobe Official Reports", "Security Researchers", "CipherPulse Analysis">
 VISUAL_TAGS: <exactly 3 dark/tech keyword phrases for background footage, comma-separated>
 
 RULES
+- CATEGORY: pick the most accurate label. Options include but are not limited to:
+  DATA BREACH · CYBER THREAT · AI NEWS · RANSOMWARE · NATION-STATE ATTACK ·
+  PRIVACY ALERT · CRITICAL VULNERABILITY · SOCIAL ENGINEERING · DEEPFAKE
 - HEADLINE: open with the single most dramatic specific detail (number, name, dollar amount).
   Never start with "In [year]" or context-setting. Lead with the shock.
   ✅ GOOD: "HACKERS STOLE 150 MILLION PASSWORDS FROM ADOBE"
@@ -275,6 +281,7 @@ RULES
   ✅ GOOD: "Have you checked if your email was in the Adobe breach?"
   ✅ GOOD: "Would you know if someone cloned your voice?"
   ❌ BAD: "Follow us for more cybersecurity news."
+- SOURCE: use a real source name if one is well-known, otherwise "CipherPulse Analysis".
 - VISUAL_TAGS: use dark tech imagery. Examples: "hacker dark terminal",
   "server room blue glow", "data breach warning screen", "cybersecurity abstract"
 - All facts must be publicly documented. Never fabricate incidents.
@@ -329,9 +336,11 @@ def generate_text_card_content(
         return m.group(1).strip() if m else ""
 
     title    = _extract("TITLE",    raw) or topic[:70]
+    category = _extract("CATEGORY", raw) or "CYBER THREAT"
     headline = _extract("HEADLINE", raw) or topic.upper()
     detail   = _extract("DETAIL",   raw) or ""
     cta      = _extract("CTA",      raw) or "What do you think?"
+    source   = _extract("SOURCE",   raw) or "CipherPulse Analysis"
     tags_raw = _extract("VISUAL_TAGS", raw)
     visual_tags = [t.strip() for t in tags_raw.split(",") if t.strip()][:3]
     if not visual_tags:
@@ -340,13 +349,15 @@ def generate_text_card_content(
     content = TextCardContent(
         topic=topic,
         title=title,
+        category=category,
         headline=headline,
         detail=detail,
         cta=cta,
+        source=source,
         visual_tags=visual_tags,
         raw_response=raw,
     )
-    log.info(f"Text card — title: {title!r} | headline: {headline[:50]!r}")
+    log.info(f"Text card — [{category}] {title!r} | {headline[:50]!r}")
     return content
 
 

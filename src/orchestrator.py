@@ -208,6 +208,8 @@ def run_pipeline(
                 headline=tc.headline,
                 detail=tc.detail,
                 cta=tc.cta,
+                category=tc.category,
+                source=tc.source,
                 clip_paths=clips,
                 output_dir=out_dir,
             )
