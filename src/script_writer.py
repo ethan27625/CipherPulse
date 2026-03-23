@@ -207,84 +207,74 @@ class Script:
 @dataclass
 class TextCardContent:
     """
-    Content for a format-7 Text Card Short — 3 slides, no voiceover.
+    Content for a format-7 Text Card Short — single-frame news card, no voiceover.
 
-    Unlike Script (which drives voiceover + captions), TextCardContent
-    drives Pillow slide rendering via text_card_assembler.py.
+    The video is ONE composed frame (top image + bottom text) that Ken Burns
+    zooms very subtly over 20 seconds.  paragraphs drive the on-screen text;
+    title drives YouTube SEO (never shown on video).
     """
 
-    topic:       str
-    title:       str              # SEO title (≤ 70 chars)
-    category:    str              # Slide 0 label — e.g. "DATA BREACH", "AI NEWS"
-    headline:    str              # Slide 0 — ALL CAPS headline, ≤ 12 words
-    detail:      str              # Slide 1 — 2-3 sentences, ≤ 40 words
-    cta:         str              # Engagement comment question (not rendered on slides)
-    visual_tags: list[str]        # 3 keyword phrases for Pexels background clips
-    source:      str = "CipherPulse"   # Slide 1 attribution
+    topic:        str
+    title:        str              # YouTube title / SEO — NOT shown on video
+    category:     str              # DATA BREACH / RANSOMWARE / etc. (SEO context)
+    paragraphs:   list[str]        # 3 story paragraphs with *asterisk cyan markup*
+    visual_tags:  list[str]        # 2-3 Pexels search terms for the top image
     raw_response: str = field(default="", repr=False)
 
     def to_file_content(self) -> str:
-        """Format for writing to script.txt in the output directory."""
-        return "\n".join([
+        """Serialize to script.txt in the output directory."""
+        lines = [
             f"TITLE: {self.title}",
             f"TOPIC: {self.topic}",
-            f"FORMAT: 7 — Text Card",
+            f"FORMAT: 7 — Text Card (single frame)",
             f"CATEGORY: {self.category}",
-            f"SOURCE: {self.source}",
+            f"VISUAL_TAGS: {' | '.join(self.visual_tags)}",
             "",
-            "── SLIDES ─────────────────────────────────────────────────────────",
-            f"[SLIDE 0 — HOOK]",
-            self.headline,
-            "",
-            f"[SLIDE 1 — DETAIL]",
-            self.detail,
-            "",
-            "── VISUAL TAGS ────────────────────────────────────────────────────",
-            ", ".join(self.visual_tags),
-        ])
+        ]
+        for i, para in enumerate(self.paragraphs, 1):
+            lines += [f"PARAGRAPH_{i}: {para}", ""]
+        return "\n".join(lines)
 
 
 # ── Text Card system prompt ───────────────────────────────────────────────────
 
 TEXT_CARD_SYSTEM_PROMPT = """\
-You generate 3-slide text card content for CipherPulse, a cybersecurity and AI
-short-form video channel. Text cards are 8-15 second Shorts with no voiceover —
-just bold text over dark footage. They work like news headline cards.
+You write 3-paragraph cybersecurity story summaries for CipherPulse, a short-form
+video channel. Each summary is displayed as a static news card that viewers read
+on their phone — like a long-form social media post, not a slide deck.
 
 CHANNEL IDENTITY
 - Name: CipherPulse | Tagline: "The Heartbeat of Digital Threats"
-- Tone: Authoritative, slightly dramatic, educational but accessible
-- Audience: Tech-curious 18-35 year olds
+- Tone: Authoritative, slightly dramatic, accessible
+- Audience: Tech-curious 18-35 year olds, no technical background needed
 
-OUTPUT FORMAT (output ONLY this block, no preamble, no extra lines):
-TITLE: <compelling SEO title, under 70 characters>
-CATEGORY: <2-4 words ALL CAPS — e.g. DATA BREACH, AI NEWS, CYBER THREAT, RANSOMWARE, PRIVACY ALERT>
-HEADLINE: <ALL CAPS, maximum 10 words — the most shocking specific fact>
-DETAIL: <2-3 sentences, maximum 40 words — what happened, why it matters>
-CTA: <1 sentence, provocative question — ask about THEIR experience>
-SOURCE: <short attribution — e.g. "Adobe Official Reports", "Security Researchers", "CipherPulse Analysis">
-VISUAL_TAGS: <exactly 3 dark/tech keyword phrases for background footage, comma-separated>
+OUTPUT FORMAT (output ONLY this block, exact field names, one per line):
+TITLE: <compelling YouTube SEO title, 50-80 characters — never shown on video>
+CATEGORY: <ALL CAPS, e.g. DATA BREACH / RANSOMWARE / AI THREAT / PRIVACY / FRAUD / HACKING>
+VISUAL_TAGS: <Pexels search term 1> | <Pexels search term 2> | <Pexels search term 3>
+PARAGRAPH_1: <Hook — what happened, lead with the most dramatic fact>
+PARAGRAPH_2: <Context — backstory, how it happened, timeline>
+PARAGRAPH_3: <Impact — why this matters to everyday people>
 
-RULES
-- CATEGORY: pick the most accurate label. Options include but are not limited to:
-  DATA BREACH · CYBER THREAT · AI NEWS · RANSOMWARE · NATION-STATE ATTACK ·
-  PRIVACY ALERT · CRITICAL VULNERABILITY · SOCIAL ENGINEERING · DEEPFAKE
-- HEADLINE: open with the single most dramatic specific detail (number, name, dollar amount).
-  Never start with "In [year]" or context-setting. Lead with the shock.
-  ✅ GOOD: "HACKERS STOLE 150 MILLION PASSWORDS FROM ADOBE"
-  ✅ GOOD: "THIS AI CLONED A CEO'S VOICE AND WIRED $35 MILLION"
-  ❌ BAD: "IN 2013, ADOBE SUFFERED A MASSIVE DATA BREACH"
-- DETAIL: plain language only. Include at least one specific number or date.
-  2-3 sentences maximum. No jargon unless immediately explained.
-- CTA: must reference the specific topic. Ask about the viewer's personal experience.
-  Never use "Follow CipherPulse for more." Make it feel like a human question.
-  ✅ GOOD: "Have you checked if your email was in the Adobe breach?"
-  ✅ GOOD: "Would you know if someone cloned your voice?"
-  ❌ BAD: "Follow us for more cybersecurity news."
-- SOURCE: use a real source name if one is well-known, otherwise "CipherPulse Analysis".
-- VISUAL_TAGS: use dark tech imagery. Examples: "hacker dark terminal",
-  "server room blue glow", "data breach warning screen", "cybersecurity abstract"
-- All facts must be publicly documented. Never fabricate incidents.
+MARKUP RULES
+- Wrap key terms in *asterisks* so the renderer colours them cyan:
+    company names, numbers, dollar amounts, percentages, dates, key action verbs
+- Example: "In *2013*, *Adobe* was breached and *153 million* user records were stolen."
+- Multi-word terms work: "*the largest data breach in history*" colours all 6 words cyan
+- Keep asterisks tight around the term — no leading/trailing spaces inside them
+
+CONTENT RULES
+- Total word count: 80-120 words across all 3 paragraphs
+- Short punchy sentences (this is read on a phone screen, not an article)
+- Each paragraph: 2-3 sentences
+- Include at least one specific number, date, or dollar figure in each paragraph
+- No hashtags, no emojis, no "Follow us", no calls-to-action on the card itself
+- Write for a curious non-technical 25-year-old
+- NEVER fabricate incidents — only documented, publicly known facts
+
+VISUAL_TAGS: use specific Pexels-friendly imagery (dark/tech aesthetic)
+  Good: "hacker dark terminal" | "data breach warning screen" | "server room blue glow"
+  Bad: "cybersecurity" | "technology" | "computer"
 """
 
 
@@ -293,71 +283,80 @@ def generate_text_card_content(
     api_key: Optional[str] = None,
 ) -> TextCardContent:
     """
-    Generate 3-slide text card content for a format-7 Short.
+    Generate single-frame news card content for a format-7 Short.
 
-    Uses a focused system prompt that produces the 3-field structure
-    (HEADLINE / DETAIL / CTA) instead of a full voiceover script.
-    Uses claude-haiku (fast + cheap — the content is simple and short).
+    Produces a YouTube SEO title, a category label, 3 story paragraphs with
+    *asterisk markup* for cyan key terms, and 2-3 Pexels visual search tags.
+
+    Uses claude-haiku (fast + cheap — the content structure is simple).
 
     Args:
-        topic:   The video topic string (from topics.json)
+        topic:   Video topic string from topics.json
         api_key: Override for ANTHROPIC_API_KEY env var (optional)
 
     Returns:
-        TextCardContent dataclass with all slide fields populated.
+        TextCardContent dataclass ready for text_card_assembler.assemble_text_card()
 
     Raises:
         ValueError:   If ANTHROPIC_API_KEY is not set.
-        RuntimeError: If Claude fails to produce parseable output.
+        RuntimeError: If Claude fails to produce parseable output after retries.
     """
     resolved_key = api_key or os.getenv("ANTHROPIC_API_KEY")
     if not resolved_key:
         raise ValueError("ANTHROPIC_API_KEY not set.")
 
-    client = anthropic.Anthropic(api_key=resolved_key)
-    user_message = f"Generate a CipherPulse text card for this topic: {topic}"
+    client       = anthropic.Anthropic(api_key=resolved_key)
+    user_message = f"Write a CipherPulse news card for this topic: {topic}"
 
     log.info(f"Generating text card content for: {topic[:60]}")
 
     try:
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=300,
+            max_tokens=600,
             system=TEXT_CARD_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_message}],
         )
         raw = response.content[0].text.strip()
-    except Exception as e:
-        raise RuntimeError(f"Text card generation failed: {e}") from e
+    except Exception as exc:
+        raise RuntimeError(f"Text card generation failed: {exc}") from exc
 
-    # Parse the structured output
-    def _extract(field: str, text: str) -> str:
-        m = re.search(rf"^{field}:\s*(.+)$", text, re.MULTILINE)
+    # ── Parse structured fields ───────────────────────────────────────────────
+    def _field(key: str) -> str:
+        m = re.search(rf"^{key}:\s*(.+)$", raw, re.MULTILINE)
         return m.group(1).strip() if m else ""
 
-    title    = _extract("TITLE",    raw) or topic[:70]
-    category = _extract("CATEGORY", raw) or "CYBER THREAT"
-    headline = _extract("HEADLINE", raw) or topic.upper()
-    detail   = _extract("DETAIL",   raw) or ""
-    cta      = _extract("CTA",      raw) or "What do you think?"
-    source   = _extract("SOURCE",   raw) or "CipherPulse Analysis"
-    tags_raw = _extract("VISUAL_TAGS", raw)
-    visual_tags = [t.strip() for t in tags_raw.split(",") if t.strip()][:3]
+    title    = _field("TITLE")    or topic[:80]
+    category = _field("CATEGORY") or "CYBER THREAT"
+
+    vt_raw      = _field("VISUAL_TAGS")
+    visual_tags = [t.strip() for t in vt_raw.split("|") if t.strip()][:3]
     if not visual_tags:
-        visual_tags = ["hacker dark terminal", "server room glow", "data breach screen"]
+        visual_tags = ["hacker dark terminal", "server room blue glow", "data breach screen"]
+
+    paragraphs: list[str] = []
+    for i in range(1, 4):
+        p = _field(f"PARAGRAPH_{i}")
+        if p:
+            paragraphs.append(p)
+
+    if len(paragraphs) < 3:
+        log.warning(f"Only parsed {len(paragraphs)}/3 paragraphs — padding with placeholders")
+        while len(paragraphs) < 3:
+            paragraphs.append("")
 
     content = TextCardContent(
         topic=topic,
         title=title,
         category=category,
-        headline=headline,
-        detail=detail,
-        cta=cta,
-        source=source,
+        paragraphs=paragraphs,
         visual_tags=visual_tags,
         raw_response=raw,
     )
-    log.info(f"Text card — [{category}] {title!r} | {headline[:50]!r}")
+    log.info(
+        f"Text card — [{category}] {title!r} | "
+        f"{sum(len(p.split()) for p in paragraphs)} words across 3 paragraphs"
+    )
     return content
 
 

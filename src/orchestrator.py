@@ -140,11 +140,15 @@ def run_pipeline(
             from src.script_writer import generate_text_card_content
             tc = generate_text_card_content(topic=topic.topic)
             (out_dir / "script.txt").write_text(tc.to_file_content())
-            record["script"] = {"title": tc.title, "format": "text_card"}
+            record["script"] = {"title": tc.title, "format": "text_card",
+                                 "word_count": sum(len(p.split()) for p in tc.paragraphs)}
             log.info(f"  Text card: {tc.title!r}")
             # Unified references used by stages 8+ (SEO, upload, comment)
-            content_title      = tc.title
-            content_full_text  = f"{tc.headline}\n\n{tc.detail}\n\n{tc.cta}"
+            content_title       = tc.title
+            # Strip *asterisk markup* for plain-text SEO input
+            content_full_text   = tc.title + "\n\n" + "\n\n".join(
+                __import__("re").sub(r"\*([^*]+)\*", r"\1", p) for p in tc.paragraphs
+            )
             content_visual_tags = tc.visual_tags
         else:
             log.info("Stage 3/12 — Writing voiceover script with Claude…")
@@ -215,11 +219,7 @@ def run_pipeline(
             log.info("Stage 6/12 — Assembling text card video with Pillow + FFmpeg…")
             from src.text_card_assembler import assemble_text_card
             video_path = assemble_text_card(
-                headline=tc.headline,
-                detail=tc.detail,
-                cta=tc.cta,
-                category=tc.category,
-                source=tc.source,
+                paragraphs=tc.paragraphs,
                 clip_paths=clips,
                 output_dir=out_dir,
             )
