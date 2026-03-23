@@ -64,6 +64,7 @@ FORMAT_NAMES: dict[int, str] = {
     4: "How It Works",
     5: "List / Ranking",
     6: "News React",
+    7: "Text Card",
 }
 
 # ── System prompt ─────────────────────────────────────────────────────────────
@@ -199,6 +200,154 @@ class Script:
                 "",
             ] + lines
         return "\n".join(lines)
+
+
+# ── Text Card data structure ───────────────────────────────────────────────────
+
+@dataclass
+class TextCardContent:
+    """
+    Content for a format-7 Text Card Short — 3 slides, no voiceover.
+
+    Unlike Script (which drives voiceover + captions), TextCardContent
+    drives Pillow slide rendering via text_card_assembler.py.
+    """
+
+    topic:       str
+    title:       str              # SEO title (≤ 70 chars)
+    headline:    str              # Slide 0 — ALL CAPS headline, ≤ 12 words
+    detail:      str              # Slide 1 — 2-3 sentences, ≤ 40 words
+    cta:         str              # Slide 2 — provocative question / follow prompt
+    visual_tags: list[str]        # 3 keyword phrases for Pexels background clips
+    raw_response: str = field(default="", repr=False)
+
+    def to_file_content(self) -> str:
+        """Format for writing to script.txt in the output directory."""
+        return "\n".join([
+            f"TITLE: {self.title}",
+            f"TOPIC: {self.topic}",
+            f"FORMAT: 7 — Text Card",
+            "",
+            "── SLIDES ─────────────────────────────────────────────────────────",
+            f"[SLIDE 0 — HOOK]",
+            self.headline,
+            "",
+            f"[SLIDE 1 — DETAIL]",
+            self.detail,
+            "",
+            f"[SLIDE 2 — CTA]",
+            self.cta,
+            "",
+            "── VISUAL TAGS ────────────────────────────────────────────────────",
+            ", ".join(self.visual_tags),
+        ])
+
+
+# ── Text Card system prompt ───────────────────────────────────────────────────
+
+TEXT_CARD_SYSTEM_PROMPT = """\
+You generate 3-slide text card content for CipherPulse, a cybersecurity and AI
+short-form video channel. Text cards are 8-15 second Shorts with no voiceover —
+just bold text over dark footage. They work like news headline cards.
+
+CHANNEL IDENTITY
+- Name: CipherPulse | Tagline: "The Heartbeat of Digital Threats"
+- Tone: Authoritative, slightly dramatic, educational but accessible
+- Audience: Tech-curious 18-35 year olds
+
+OUTPUT FORMAT (output ONLY this block, no preamble):
+TITLE: <compelling SEO title, under 70 characters>
+HEADLINE: <ALL CAPS, maximum 10 words — the most shocking specific fact>
+DETAIL: <2-3 sentences, maximum 40 words — what happened, why it matters>
+CTA: <1 sentence, provocative question — ask about THEIR experience>
+VISUAL_TAGS: <exactly 3 dark/tech keyword phrases for background footage, comma-separated>
+
+RULES
+- HEADLINE: open with the single most dramatic specific detail (number, name, dollar amount).
+  Never start with "In [year]" or context-setting. Lead with the shock.
+  ✅ GOOD: "HACKERS STOLE 150 MILLION PASSWORDS FROM ADOBE"
+  ✅ GOOD: "THIS AI CLONED A CEO'S VOICE AND WIRED $35 MILLION"
+  ❌ BAD: "IN 2013, ADOBE SUFFERED A MASSIVE DATA BREACH"
+- DETAIL: plain language only. Include at least one specific number or date.
+  2-3 sentences maximum. No jargon unless immediately explained.
+- CTA: must reference the specific topic. Ask about the viewer's personal experience.
+  Never use "Follow CipherPulse for more." Make it feel like a human question.
+  ✅ GOOD: "Have you checked if your email was in the Adobe breach?"
+  ✅ GOOD: "Would you know if someone cloned your voice?"
+  ❌ BAD: "Follow us for more cybersecurity news."
+- VISUAL_TAGS: use dark tech imagery. Examples: "hacker dark terminal",
+  "server room blue glow", "data breach warning screen", "cybersecurity abstract"
+- All facts must be publicly documented. Never fabricate incidents.
+"""
+
+
+def generate_text_card_content(
+    topic: str,
+    api_key: Optional[str] = None,
+) -> TextCardContent:
+    """
+    Generate 3-slide text card content for a format-7 Short.
+
+    Uses a focused system prompt that produces the 3-field structure
+    (HEADLINE / DETAIL / CTA) instead of a full voiceover script.
+    Uses claude-haiku (fast + cheap — the content is simple and short).
+
+    Args:
+        topic:   The video topic string (from topics.json)
+        api_key: Override for ANTHROPIC_API_KEY env var (optional)
+
+    Returns:
+        TextCardContent dataclass with all slide fields populated.
+
+    Raises:
+        ValueError:   If ANTHROPIC_API_KEY is not set.
+        RuntimeError: If Claude fails to produce parseable output.
+    """
+    resolved_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+    if not resolved_key:
+        raise ValueError("ANTHROPIC_API_KEY not set.")
+
+    client = anthropic.Anthropic(api_key=resolved_key)
+    user_message = f"Generate a CipherPulse text card for this topic: {topic}"
+
+    log.info(f"Generating text card content for: {topic[:60]}")
+
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            system=TEXT_CARD_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        )
+        raw = response.content[0].text.strip()
+    except Exception as e:
+        raise RuntimeError(f"Text card generation failed: {e}") from e
+
+    # Parse the structured output
+    def _extract(field: str, text: str) -> str:
+        m = re.search(rf"^{field}:\s*(.+)$", text, re.MULTILINE)
+        return m.group(1).strip() if m else ""
+
+    title    = _extract("TITLE",    raw) or topic[:70]
+    headline = _extract("HEADLINE", raw) or topic.upper()
+    detail   = _extract("DETAIL",   raw) or ""
+    cta      = _extract("CTA",      raw) or "What do you think?"
+    tags_raw = _extract("VISUAL_TAGS", raw)
+    visual_tags = [t.strip() for t in tags_raw.split(",") if t.strip()][:3]
+    if not visual_tags:
+        visual_tags = ["hacker dark terminal", "server room glow", "data breach screen"]
+
+    content = TextCardContent(
+        topic=topic,
+        title=title,
+        headline=headline,
+        detail=detail,
+        cta=cta,
+        visual_tags=visual_tags,
+        raw_response=raw,
+    )
+    log.info(f"Text card — title: {title!r} | headline: {headline[:50]!r}")
+    return content
 
 
 # ── Duration estimation ────────────────────────────────────────────────────────
@@ -433,8 +582,8 @@ if __name__ == "__main__":
     parser.add_argument("--topic", type=str, help="Topic string for the video")
     parser.add_argument(
         "--format", type=int, default=1, dest="format_id",
-        choices=[1, 2, 3, 4, 5, 6],
-        help="Content format ID (1=Incident, 2=AI Reveal, 3=Myth, 4=HowItWorks, 5=List, 6=News)",
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        help="Content format ID (1=Incident, 2=AI Reveal, 3=Myth, 4=HowItWorks, 5=List, 6=News, 7=TextCard)",
     )
     parser.add_argument(
         "--news-headline", type=str, dest="news_headline",

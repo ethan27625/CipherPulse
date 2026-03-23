@@ -24,6 +24,9 @@ Pipeline stages per video:
  11. tiktok_uploader → PKCE upload (gated)
  12. instagram_uploader → Graph API upload (gated; uses file_hoster)
 
+ Format 7 (Text Card) path skips stages 4 (voice) and produces slide PNGs
+ instead of video_assembler output. Stages 8-12 are identical for both paths.
+
 All outputs land in output/<YYYYMMDD_HHMMSS>/
 """
 
@@ -129,91 +132,137 @@ def run_pipeline(
         except Exception as exc:
             log.warning(f"  News fetch failed (non-fatal): {exc}")
 
-        # ── Stage 3: Script ────────────────────────────────────────────────────
-        log.info("Stage 3/11 — Writing script with Claude…")
-        from src.script_writer import generate_script
-        script = generate_script(
-            topic=topic.topic,
-            format_id=topic.format,
-            news_context=news_context if topic.format == 6 else None,
-        )
-        # Save script to disk
-        script_path = out_dir / "script.txt"
-        script_path.write_text(script.to_file_content())
-        record["script"] = {
-            "title":           script.title,
-            "est_words":       script.est_words,
-            "est_duration_s":  script.est_duration_seconds,
-        }
-        log.info(
-            f"  Script: {script.est_words} words, "
-            f"~{script.est_duration_seconds:.1f}s — {script.title!r}"
-        )
+        is_text_card = (topic.format == 7)
 
-        # ── Stage 4: Voiceover ─────────────────────────────────────────────────
-        log.info("Stage 4/11 — Generating voiceover…")
-        from src.voice_generator import generate_voiceover
-        # generate_voiceover takes plain text (no [VISUAL] tags)
-        voice = generate_voiceover(
-            script_text=script.full_text,
-            output_dir=out_dir,
-        )
-        record["voice"] = {
-            "duration_s":    voice.duration_seconds,
-            "word_count":    voice.word_count,
-            "caption_count": voice.caption_count,
-        }
-        log.info(
-            f"  Voice: {voice.duration_seconds:.1f}s, "
-            f"{voice.word_count} words, {voice.caption_count} captions"
-        )
+        # ── Stage 3: Content generation ────────────────────────────────────────
+        if is_text_card:
+            log.info("Stage 3/12 — Generating text card content with Claude…")
+            from src.script_writer import generate_text_card_content
+            tc = generate_text_card_content(topic=topic.topic)
+            (out_dir / "script.txt").write_text(tc.to_file_content())
+            record["script"] = {"title": tc.title, "format": "text_card"}
+            log.info(f"  Text card: {tc.title!r}")
+            # Unified references used by stages 8+ (SEO, upload, comment)
+            content_title      = tc.title
+            content_full_text  = f"{tc.headline}\n\n{tc.detail}\n\n{tc.cta}"
+            content_visual_tags = tc.visual_tags
+        else:
+            log.info("Stage 3/12 — Writing voiceover script with Claude…")
+            from src.script_writer import generate_script
+            script = generate_script(
+                topic=topic.topic,
+                format_id=topic.format,
+                news_context=news_context if topic.format == 6 else None,
+            )
+            (out_dir / "script.txt").write_text(script.to_file_content())
+            record["script"] = {
+                "title":          script.title,
+                "est_words":      script.est_words,
+                "est_duration_s": script.est_duration_seconds,
+            }
+            log.info(
+                f"  Script: {script.est_words} words, "
+                f"~{script.est_duration_seconds:.1f}s — {script.title!r}"
+            )
+            content_title       = script.title
+            content_full_text   = script.full_text
+            content_visual_tags = script.visual_tags
+
+        # ── Stage 4: Voiceover (voiceover path only) ───────────────────────────
+        if is_text_card:
+            log.info("Stage 4/12 — Voiceover skipped (text card format)")
+            record["voice"] = {"status": "skipped"}
+        else:
+            log.info("Stage 4/12 — Generating voiceover…")
+            from src.voice_generator import generate_voiceover
+            voice = generate_voiceover(
+                script_text=script.full_text,
+                output_dir=out_dir,
+            )
+            record["voice"] = {
+                "duration_s":    voice.duration_seconds,
+                "word_count":    voice.word_count,
+                "caption_count": voice.caption_count,
+            }
+            log.info(
+                f"  Voice: {voice.duration_seconds:.1f}s, "
+                f"{voice.word_count} words, {voice.caption_count} captions"
+            )
 
         # ── Stage 5: Footage ───────────────────────────────────────────────────
-        log.info("Stage 5/11 — Downloading footage clips…")
+        log.info("Stage 5/12 — Downloading footage clips…")
         from src.footage_downloader import fetch_clips_for_script
-        # Clips go to the shared footage_cache; returns list of local Paths
-        clips = fetch_clips_for_script(visual_tags=script.visual_tags)
+        clip_target = 3 if is_text_card else 10
+        clips = fetch_clips_for_script(
+            visual_tags=content_visual_tags,
+            target_clips=clip_target,
+        )
         record["footage"] = {"clip_count": len(clips), "paths": [str(c) for c in clips]}
         log.info(f"  Footage: {len(clips)} clips")
 
-        # ── Stage 6: Video ─────────────────────────────────────────────────────
-        log.info("Stage 6/11 — Assembling video with FFmpeg…")
-        from src.video_assembler import assemble_video
-        video_path = assemble_video(
-            clip_paths=clips,
-            voiceover_path=voice.mp3_path,
-            srt_path=voice.subtitle_path,
-            output_dir=out_dir,
-        )
+        # ── Stage 6: Video assembly ────────────────────────────────────────────
+        if is_text_card:
+            log.info("Stage 6/12 — Assembling text card video with Pillow + FFmpeg…")
+            from src.text_card_assembler import assemble_text_card
+            video_path = assemble_text_card(
+                headline=tc.headline,
+                detail=tc.detail,
+                cta=tc.cta,
+                clip_paths=clips,
+                output_dir=out_dir,
+            )
+        else:
+            log.info("Stage 6/12 — Assembling voiceover video with FFmpeg…")
+            from src.video_assembler import assemble_video
+            video_path = assemble_video(
+                clip_paths=clips,
+                voiceover_path=voice.mp3_path,
+                srt_path=voice.subtitle_path,
+                output_dir=out_dir,
+            )
         record["video"] = {"path": str(video_path), "size_mb": video_path.stat().st_size / 1e6}
         log.info(f"  Video: {record['video']['size_mb']:.1f} MB → {video_path}")
 
         # ── Stage 7: Thumbnail ─────────────────────────────────────────────────
-        log.info("Stage 7/11 — Creating thumbnail…")
-        from src.thumbnail_creator import create_thumbnail
-        thumb_path = create_thumbnail(
-            title=script.title,
-            output_dir=out_dir,
-            format_id=topic.format,
-        )
+        log.info("Stage 7/12 — Creating thumbnail…")
+        if is_text_card:
+            # Crop the Slide 0 image (1080×1920) to 1280×720 landscape thumbnail.
+            # Scale to 1280 wide first, then center-crop the height to 720.
+            from PIL import Image as _PilImage
+            slide0_path = out_dir / "slide_0.png"
+            slide0 = _PilImage.open(slide0_path).convert("RGB")
+            scale  = 1280 / slide0.width
+            new_h  = int(slide0.height * scale)
+            slide0 = slide0.resize((1280, new_h), _PilImage.LANCZOS)
+            top    = (new_h - 720) // 2
+            thumb  = slide0.crop((0, top, 1280, top + 720))
+            thumb_path = out_dir / "thumbnail.png"
+            thumb.save(thumb_path, "PNG")
+        else:
+            from src.thumbnail_creator import create_thumbnail
+            thumb_path = create_thumbnail(
+                title=content_title,
+                output_dir=out_dir,
+                format_id=topic.format,
+            )
         record["thumbnail"] = {"path": str(thumb_path)}
         log.info(f"  Thumbnail: {thumb_path}")
 
         # ── Stage 8: SEO metadata ──────────────────────────────────────────────
-        log.info("Stage 8/11 — Generating SEO metadata…")
+        log.info("Stage 8/12 — Generating SEO metadata…")
         from src.seo_generator import generate_metadata
         metadata = generate_metadata(
             topic=topic.topic,
             format_id=topic.format,
-            script_text=script.full_text,
-            video_title=script.title,
+            script_text=content_full_text,
+            video_title=content_title,
             output_dir=out_dir,
         )
         record["seo"] = {"yt_title": metadata.youtube.title}
         log.info(f"  YouTube title: {metadata.youtube.title!r}")
 
         # ── Stage 9: YouTube upload ────────────────────────────────────────────
-        log.info("Stage 9/11 — Uploading to YouTube…")
+        log.info("Stage 9/12 — Uploading to YouTube…")
         yt_result: dict = {}
         try:
             from src.youtube_uploader import upload_short as yt_upload

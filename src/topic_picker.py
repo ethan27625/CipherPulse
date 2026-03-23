@@ -21,6 +21,11 @@ log = logging.getLogger(__name__)
 
 TOPICS_PATH = Path("topics.json")
 
+# 30% of picks are overridden to format 7 (Text Card) for content variety.
+# This mixes quick text card Shorts with the standard voiceover Shorts
+# without needing separate format-7 entries in topics.json.
+TEXT_CARD_PROBABILITY = 0.30
+
 
 @dataclass
 class Topic:
@@ -75,15 +80,26 @@ def pick_topic(random_pick: bool = False) -> Topic:
             break
 
     TOPICS_PATH.write_text(json.dumps(all_topics, indent=2))
-    log.info(
-        f"Picked topic #{chosen_data['id']} (format {chosen_data['format']}): "
-        f"{chosen_data['topic']!r}"
-    )
+
+    # 30% chance to override format → 7 (Text Card) for content variety.
+    # The topic subject stays the same; only the production path changes.
+    assigned_format = chosen_data["format"]
+    if random.random() < TEXT_CARD_PROBABILITY:
+        assigned_format = 7
+        log.info(
+            f"Picked topic #{chosen_data['id']} (format overridden → 7/TextCard): "
+            f"{chosen_data['topic']!r}"
+        )
+    else:
+        log.info(
+            f"Picked topic #{chosen_data['id']} (format {assigned_format}): "
+            f"{chosen_data['topic']!r}"
+        )
 
     return Topic(
         id=chosen_data["id"],
         topic=chosen_data["topic"],
-        format=chosen_data["format"],
+        format=assigned_format,
     )
 
 
