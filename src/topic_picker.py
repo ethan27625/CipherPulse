@@ -24,7 +24,7 @@ TOPICS_PATH = Path("topics.json")
 # 30% of picks are overridden to format 7 (Text Card) for content variety.
 # This mixes quick text card Shorts with the standard voiceover Shorts
 # without needing separate format-7 entries in topics.json.
-TEXT_CARD_PROBABILITY = 0.30
+TEXT_CARD_PROBABILITY = 1.00  # set to 0.30 to resume mixed mode
 
 
 @dataclass
