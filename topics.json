@@ -199,36 +199,36 @@
     "id": 29,
     "topic": "LinkedIn 2012: 117 Million Passwords Cracked and Sold 4 Years Later",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-23"
   },
   {
     "id": 30,
     "topic": "The PlayStation Network Breach: 77 Million Accounts and 23 Days of Downtime",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-23"
   },
   {
     "id": 31,
     "topic": "Heartbleed: The SSL Bug That Left Half the Internet Vulnerable for 2 Years",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-23"
   },
   {
     "id": 32,
     "topic": "Shellshock: The 25-Year-Old Bash Bug That Gave Attackers Full Control",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-23"
   },
   {
     "id": 33,
     "topic": "Log4Shell: One Line of Java Code That Broke the Internet in 2021",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-23"
   },
   {
     "id": 34,

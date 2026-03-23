@@ -217,7 +217,7 @@ class TextCardContent:
     topic:        str
     title:        str              # YouTube title / SEO — NOT shown on video
     category:     str              # DATA BREACH / RANSOMWARE / etc. (SEO context)
-    paragraphs:   list[str]        # 3 story paragraphs with *asterisk cyan markup*
+    paragraphs:   list[str]        # 2 story paragraphs with *asterisk cyan markup*
     visual_tags:  list[str]        # 2-3 Pexels search terms for the top image
     raw_response: str = field(default="", repr=False)
 
@@ -239,9 +239,10 @@ class TextCardContent:
 # ── Text Card system prompt ───────────────────────────────────────────────────
 
 TEXT_CARD_SYSTEM_PROMPT = """\
-You write 3-paragraph cybersecurity story summaries for CipherPulse, a short-form
+You write 2-paragraph cybersecurity story summaries for CipherPulse, a short-form
 video channel. Each summary is displayed as a static news card that viewers read
-on their phone — like a long-form social media post, not a slide deck.
+on their phone in under 12 seconds — punchy and scannable, every sentence delivers
+a fact or insight.
 
 CHANNEL IDENTITY
 - Name: CipherPulse | Tagline: "The Heartbeat of Digital Threats"
@@ -252,9 +253,8 @@ OUTPUT FORMAT (output ONLY this block, exact field names, one per line):
 TITLE: <compelling YouTube SEO title, 50-80 characters — never shown on video>
 CATEGORY: <ALL CAPS, e.g. DATA BREACH / RANSOMWARE / AI THREAT / PRIVACY / FRAUD / HACKING>
 VISUAL_TAGS: <Pexels search term 1> | <Pexels search term 2> | <Pexels search term 3>
-PARAGRAPH_1: <Hook — what happened, lead with the most dramatic fact>
-PARAGRAPH_2: <Context — backstory, how it happened, timeline>
-PARAGRAPH_3: <Impact — why this matters to everyday people>
+PARAGRAPH_1: <Hook — what happened, lead with the most dramatic fact. 2 sentences max.>
+PARAGRAPH_2: <Impact — how it happened and why it matters to everyday people. 2 sentences max.>
 
 MARKUP RULES
 - Wrap key terms in *asterisks* so the renderer colours them cyan:
@@ -264,10 +264,11 @@ MARKUP RULES
 - Keep asterisks tight around the term — no leading/trailing spaces inside them
 
 CONTENT RULES
-- Total word count: 80-120 words across all 3 paragraphs
+- Total word count: 50-70 words across BOTH paragraphs combined — NO MORE
+- Cut every filler word — if a sentence doesn't deliver a fact or insight, delete it
 - Short punchy sentences (this is read on a phone screen, not an article)
-- Each paragraph: 2-3 sentences
-- Include at least one specific number, date, or dollar figure in each paragraph
+- Each paragraph: 2 sentences max
+- Include at least one specific number, date, or dollar figure per paragraph
 - No hashtags, no emojis, no "Follow us", no calls-to-action on the card itself
 - Write for a curious non-technical 25-year-old
 - NEVER fabricate incidents — only documented, publicly known facts
@@ -285,7 +286,7 @@ def generate_text_card_content(
     """
     Generate single-frame news card content for a format-7 Short.
 
-    Produces a YouTube SEO title, a category label, 3 story paragraphs with
+    Produces a YouTube SEO title, a category label, 2 story paragraphs with
     *asterisk markup* for cyan key terms, and 2-3 Pexels visual search tags.
 
     Uses claude-haiku (fast + cheap — the content structure is simple).
@@ -335,14 +336,14 @@ def generate_text_card_content(
         visual_tags = ["hacker dark terminal", "server room blue glow", "data breach screen"]
 
     paragraphs: list[str] = []
-    for i in range(1, 4):
+    for i in range(1, 3):
         p = _field(f"PARAGRAPH_{i}")
         if p:
             paragraphs.append(p)
 
-    if len(paragraphs) < 3:
-        log.warning(f"Only parsed {len(paragraphs)}/3 paragraphs — padding with placeholders")
-        while len(paragraphs) < 3:
+    if len(paragraphs) < 2:
+        log.warning(f"Only parsed {len(paragraphs)}/2 paragraphs — padding with placeholders")
+        while len(paragraphs) < 2:
             paragraphs.append("")
 
     content = TextCardContent(
@@ -355,7 +356,7 @@ def generate_text_card_content(
     )
     log.info(
         f"Text card — [{category}] {title!r} | "
-        f"{sum(len(p.split()) for p in paragraphs)} words across 3 paragraphs"
+        f"{sum(len(p.split()) for p in paragraphs)} words across 2 paragraphs"
     )
     return content
 
