@@ -93,6 +93,10 @@ def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     """
     Load Oswald Variable at the requested size.
 
+    Pillow uses FreeType sub-pixel antialiasing automatically for all TrueType
+    fonts — no extra configuration needed.  The antialiasing is applied during
+    draw.text() calls, producing smooth edges at any size.
+
     For bold=True we attempt to set the wght axis to 700 so cyan key terms
     look heavier than body text.  Falls back to Bebas Neue, then Pillow's
     built-in default if neither custom font is available.
@@ -301,12 +305,17 @@ def _compose_frame(
                       Left-aligned (60 px margin), 34 px Oswald, 1.5× line height.
                       *Marked* words are cyan bold; plain words are white.
     """
-    # ── 1. Base canvas ────────────────────────────────────────────────────────
+    # ── 1. Base canvas — exact pixel dimensions, no rounding ─────────────────
+    assert CANVAS_W == 1080 and CANVAS_H == 1920, "Canvas must be exactly 1080×1920"
     canvas = Image.new("RGB", (CANVAS_W, CANVAS_H), BG_COLOR)
 
-    # ── 2. Top image ──────────────────────────────────────────────────────────
+    # ── 2. Top image — LANCZOS resampling for maximum sharpness ───────────────
+    # _resize_fill uses Image.LANCZOS (Pillow's highest-quality downscale filter).
+    # The crop() at the end of _resize_fill guarantees exactly CANVAS_W×IMAGE_H px.
     frame     = _extract_frame(clip_path)
     top_img   = _resize_fill(frame, CANVAS_W, IMAGE_H)
+    assert top_img.size == (CANVAS_W, IMAGE_H), \
+        f"Top image is {top_img.size}, expected ({CANVAS_W}, {IMAGE_H})"
     canvas.paste(top_img, (0, 0))
 
     # ── 3. RGBA overlay for watermark + text (alpha_composite at end) ─────────
@@ -396,8 +405,13 @@ def _make_video(
 
     cmd += [
         "-c:v", "libx264", "-profile:v", "high",
-        "-pix_fmt", "yuv420p", "-r", str(FPS), "-t", str(duration),
-        "-c:a", "aac", "-b:a", "128k",
+        "-crf", "18",          # near-lossless quality (default 23 was too soft)
+        "-preset", "slow",     # better compression at same CRF vs fast/medium
+        "-pix_fmt", "yuv420p",
+        "-r", str(FPS),
+        "-s", f"{CANVAS_W}x{CANVAS_H}",   # lock output to exactly 1080×1920
+        "-t", str(duration),
+        "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
         str(output_path),
     ]
