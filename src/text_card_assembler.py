@@ -270,10 +270,26 @@ def _pick_music() -> Optional[Path]:
     Or upgrade to real music:
         python3 -m src.download_safe_music --source jamendo
     """
+    import json
     import random
     from src.download_safe_music import verify_track
 
     DARK_KEYWORDS = {"dark", "ambient", "slow", "atmospheric", "cinematic"}
+
+    # Load registry to identify silent null-source placeholders (anullsrc).
+    # These match the dark keyword filter but contain no actual audio — excluding
+    # them ensures the sine wave drone fallback is used instead.
+    registry_path = Path(__file__).parent.parent / "music_licenses.json"
+    silent_files: set[str] = set()
+    if registry_path.exists():
+        try:
+            reg = json.loads(registry_path.read_text())
+            silent_files = {
+                t["filename"] for t in reg.get("tracks", [])
+                if "anullsrc" in t.get("source_url", "")
+            }
+        except Exception:
+            pass
 
     all_tracks = (
         [p for p in MUSIC_DIR.iterdir()
@@ -284,12 +300,15 @@ def _pick_music() -> Optional[Path]:
     dark_tracks = [
         p for p in licensed
         if any(kw in p.stem.lower() for kw in DARK_KEYWORDS)
+        and p.name not in silent_files   # exclude silent anullsrc placeholders
     ]
 
     if dark_tracks:
         chosen = random.choice(dark_tracks)
         log.info(f"Music: {chosen.name}")
         return chosen
+
+    log.info("No real dark/ambient tracks — using sine-wave drone fallback")
 
     # Fallback: generate a low-frequency drone via FFmpeg sine wave generator.
     # This is a CipherPulse-generated tone — not an external track — so it does
@@ -459,6 +478,7 @@ def _make_video(
     ]
 
     log.info(f"FFmpeg: single-frame Ken Burns → {output_path.name}  ({duration:.0f}s)")
+    log.debug("FFmpeg command: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         log.error(f"FFmpeg stderr:\n{r.stderr[-800:]}")
