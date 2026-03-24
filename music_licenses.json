@@ -178,6 +178,42 @@
       "license_type": "CC0 1.0 Universal (Public Domain)",
       "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
       "download_date": "2026-03-23"
+    },
+    {
+      "filename": "dark-ambient-1.mp3",
+      "title": "Dark Ambient Placeholder 1 (Silent)",
+      "artist": "CipherPulse / FFmpeg generated",
+      "duration_s": 65,
+      "track_id": "dark-ambient-silence-1",
+      "source_url": "generated://ffmpeg-anullsrc",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-24",
+      "note": "Silent placeholder. Replace with real dark ambient: python3 -m src.download_safe_music --source jamendo"
+    },
+    {
+      "filename": "dark-ambient-2.mp3",
+      "title": "Dark Ambient Placeholder 2 (Silent)",
+      "artist": "CipherPulse / FFmpeg generated",
+      "duration_s": 65,
+      "track_id": "dark-ambient-silence-2",
+      "source_url": "generated://ffmpeg-anullsrc",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-24",
+      "note": "Silent placeholder. Replace with real dark ambient: python3 -m src.download_safe_music --source jamendo"
+    },
+    {
+      "filename": "dark-ambient-3.mp3",
+      "title": "Dark-Ambient Placeholder 3 (Silent)",
+      "artist": "CipherPulse / FFmpeg generated",
+      "duration_s": 65,
+      "track_id": "dark-ambient-silence-3",
+      "source_url": "generated://ffmpeg-anullsrc",
+      "license_type": "CC0 1.0 Universal (Public Domain)",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "download_date": "2026-03-24",
+      "note": "Silent placeholder. Replace with real dark ambient: python3 -m src.download_safe_music --source jamendo"
     }
   ]
 }

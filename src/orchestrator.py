@@ -207,8 +207,21 @@ def run_pipeline(
         log.info("Stage 5/12 — Downloading footage clips…")
         from src.footage_downloader import fetch_clips_for_script
         clip_target = 3 if is_text_card else 10
+
+        if is_text_card:
+            # Force dark tech aesthetic: append " dark" to every search tag that
+            # doesn't already contain "dark". This biases Pexels results toward
+            # moody, low-key visuals and avoids bright/colorful lifestyle content.
+            search_tags = [
+                f"{tag} dark" if "dark" not in tag.lower() else tag
+                for tag in content_visual_tags
+            ]
+            log.info(f"  Text card: dark-forcing search tags: {search_tags}")
+        else:
+            search_tags = content_visual_tags
+
         clips = fetch_clips_for_script(
-            visual_tags=content_visual_tags,
+            visual_tags=search_tags,
             target_clips=clip_target,
         )
         record["footage"] = {"clip_count": len(clips), "paths": [str(c) for c in clips]}

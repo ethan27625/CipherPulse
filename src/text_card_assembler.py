@@ -66,7 +66,7 @@ TEXT_RIGHT = CANVAS_W - 60
 TEXT_MAX_W = TEXT_RIGHT - TEXT_LEFT   # 960 px
 
 # ── Timing ────────────────────────────────────────────────────────────────────
-DEFAULT_DURATION = 20.0   # seconds
+DEFAULT_DURATION = 16.0   # 15-18s — text card only (no voiceover slide)
 FPS              = 30
 ZOOM_START       = 1.00
 ZOOM_END         = 1.03   # 3 % zoom on top images — more noticeable than full-canvas
@@ -75,7 +75,8 @@ MUSIC_VOLUME     = 0.25   # background atmosphere — not foreground
 
 # ── Typography ────────────────────────────────────────────────────────────────
 FONT_BODY    = 38          # px — larger font for shorter/punchier 2-para format
-FONT_WM      = 20          # px — "CP" watermark
+FONT_WM      = 24          # px — "CP" watermark (bumped for visibility)
+FONT_FOOTER  = 20          # px — CTA footer line
 LINE_SPACING = 1.5         # line height multiplier
 PARA_GAP_MUL = 1.6         # extra gap between paragraphs (× line height)
 
@@ -244,17 +245,22 @@ def _draw_line(
 
 def _pick_music() -> Optional[Path]:
     """
-    Return a licensed track from assets/music/, preferring dark/ambient tones.
+    Return a dark/ambient licensed track from assets/music/, or None (silence).
 
-    Selection priority:
-      1. Any track whose filename contains "dark", "ambient", "atmospheric", or
-         "cinematic" (case-insensitive) — good for Jamendo dark ambient upgrades.
-      2. If none match, fall back to a random track from the full licensed pool.
+    STRICT filter — text card videos must feel atmospheric, not energetic.
+    Only tracks whose filename contains at least one of these keywords are used:
+      dark, ambient, slow, atmospheric, cinematic
 
-    Volume is always set to MUSIC_VOLUME (0.25) — background atmosphere only.
+    If NO track matches the keywords → returns None → video is silent.
+    Never falls back to upbeat SoundHelix tracks.
+
+    To get dark tracks: run  python3 -m src.download_safe_music --source freepd
+    or install Jamendo tracks with --source jamendo.
     """
     import random
     from src.download_safe_music import verify_track
+
+    DARK_KEYWORDS = {"dark", "ambient", "slow", "atmospheric", "cinematic"}
 
     all_tracks = (
         [p for p in MUSIC_DIR.iterdir()
@@ -262,23 +268,23 @@ def _pick_music() -> Optional[Path]:
         if MUSIC_DIR.exists() else []
     )
     licensed = [p for p in all_tracks if verify_track(p.name)]
-    if not licensed:
-        log.warning("No licensed tracks — producing silent video")
-        return None
-
-    PREFERRED_KEYWORDS = {"dark", "ambient", "atmospheric", "cinematic"}
-    preferred = [
+    dark_tracks = [
         p for p in licensed
-        if any(kw in p.stem.lower() for kw in PREFERRED_KEYWORDS)
+        if any(kw in p.stem.lower() for kw in DARK_KEYWORDS)
     ]
-    if preferred:
-        chosen = random.choice(preferred)
-        log.debug(f"Picked preferred dark/ambient track: {chosen.name}")
+
+    if dark_tracks:
+        chosen = random.choice(dark_tracks)
+        log.info(f"Music: {chosen.name}")
         return chosen
 
-    # No keyword match — use any licensed track at the reduced volume
-    log.debug("No dark/ambient tracks found — using random licensed track")
-    return random.choice(licensed)
+    log.warning(
+        f"No dark/ambient tracks found in {MUSIC_DIR} "
+        f"({len(licensed)} licensed tracks present but none match dark keywords). "
+        "Video will be silent. "
+        "Fix: python3 -m src.download_safe_music --source freepd"
+    )
+    return None
 
 
 # ── Top image preparation ─────────────────────────────────────────────────────
@@ -312,17 +318,45 @@ def _prepare_top_frames(clip_paths: list[Path], tmp: Path) -> list[Path]:
         assert img_cropped.size == (CANVAS_W, image_area_h), \
             f"Cropped frame {i} is {img_cropped.size}, expected ({CANVAS_W}, {image_area_h})"
 
+        # ── Brightness check — darken overly bright images ─────────────────────
+        # CipherPulse visual style = dark cinematic. Any image brighter than the
+        # threshold gets a dark overlay scaled to its excess brightness so it
+        # blends into the dark aesthetic without hard-clipping or color distortion.
+        from PIL import ImageStat
+        stat         = ImageStat.Stat(img_cropped)
+        mean_lum     = sum(stat.mean[:3]) / 3   # average R+G+B (ignores alpha)
+        BRIGHT_LIMIT = 110                       # 0-255; images above this are dampened
+        if mean_lum > BRIGHT_LIMIT:
+            # Overlay opacity: scales from 0% at limit to 60% at pure white (255)
+            excess  = min(mean_lum - BRIGHT_LIMIT, 145)
+            opacity = int(excess / 145 * 153)   # max 153/255 = 60% darkening
+            dark_ovl = Image.new("RGBA", (CANVAS_W, image_area_h), (0, 0, 0, opacity))
+            img_rgba  = img_cropped.convert("RGBA")
+            img_rgba.alpha_composite(dark_ovl)
+            img_cropped = img_rgba.convert("RGB")
+            log.debug(f"Frame {i}: mean brightness {mean_lum:.0f} > {BRIGHT_LIMIT} "
+                      f"— applied {opacity}/255 dark overlay")
+
         # Composite onto full 1080×700 canvas — dark strip at top, image below
         canvas = Image.new("RGB", (CANVAS_W, IMAGE_H), BG_COLOR)
         canvas.paste(img_cropped, (0, TOP_IMAGE_MARGIN))
         assert canvas.size == (CANVAS_W, IMAGE_H), \
             f"Canvas {i} is {canvas.size}, expected ({CANVAS_W}, {IMAGE_H})"
 
-        # Draw "CP" watermark at (30, 30) — 30px from top-left, not on the edge
+        # ── CP watermark — dark pill background ensures visibility on any image ─
+        # A semi-transparent dark rectangle behind the text guarantees legibility
+        # regardless of whether the image behind it is light or dark.
         rgba = canvas.convert("RGBA")
         ovl  = Image.new("RGBA", (CANVAS_W, IMAGE_H), (0, 0, 0, 0))
         d    = ImageDraw.Draw(ovl)
-        d.text((30, 30), "CP", font=wm_font, fill=(255, 255, 255, 128))
+        wm_bbox = d.textbbox((30, 30), "CP", font=wm_font)  # (x0,y0,x1,y1)
+        pad = 5
+        d.rectangle(
+            [wm_bbox[0] - pad, wm_bbox[1] - pad,
+             wm_bbox[2] + pad, wm_bbox[3] + pad],
+            fill=(0, 0, 0, 140),   # semi-transparent dark pill
+        )
+        d.text((30, 30), "CP", font=wm_font, fill=(255, 255, 255, 200))
         rgba.alpha_composite(ovl)
 
         out = tmp / f"top_{i}.png"
@@ -335,12 +369,27 @@ def _prepare_top_frames(clip_paths: list[Path], tmp: Path) -> list[Path]:
 
 # ── Bottom panel composer ─────────────────────────────────────────────────────
 
+FOOTER_TEXT = "Follow @CipherPulse  ·  Daily Cyber Threats & AI News"
+TEXT_TOP_MARGIN  = 30    # px gap between image border and first line of text
+FOOTER_GAP       = 24   # px above the separator line
+FOOTER_SEP_H     = 2    # px — separator line thickness
+FOOTER_TEXT_PAD  = 10   # px between separator and footer text
+
+
 def _compose_bottom_panel(paragraphs: list[str]) -> Image.Image:
     """
     Render the 1080×1220 static text section.
 
-    Text is vertically centred within the panel (minimum 50 px top margin).
-    *Marked* key terms render in cyan bold; all other words are plain white.
+    Layout (top to bottom, all y relative to panel top = canvas y=700):
+      y = TEXT_TOP_MARGIN (30 px)
+        Paragraphs flow down with line_h spacing and para_gap between them.
+      After last paragraph + FOOTER_GAP:
+        2 px cyan separator line (TEXT_LEFT → TEXT_RIGHT)
+      FOOTER_TEXT_PAD below separator:
+        "Follow @CipherPulse · Daily Cyber Threats & AI News" in 20px cyan.
+
+    *Marked* key terms in paragraphs render cyan bold; all other words white.
+    Text starts 30 px from top so it's close to the image with just a small gap.
 
     Returns a 1080×1220 RGB Image.
     """
@@ -348,14 +397,13 @@ def _compose_bottom_panel(paragraphs: list[str]) -> Image.Image:
     overlay = Image.new("RGBA", (CANVAS_W, BOTTOM_H), (0, 0, 0, 0))
     draw    = ImageDraw.Draw(overlay)
 
-    normal_font = _load_font(FONT_BODY, bold=False)
-    bold_font   = _load_font(FONT_BODY, bold=True)
-    line_h      = int(FONT_BODY * LINE_SPACING)     # 57 px at 38pt
-    para_gap    = int(line_h * PARA_GAP_MUL)        # extra space between paragraphs
+    normal_font = _load_font(FONT_BODY,   bold=False)
+    bold_font   = _load_font(FONT_BODY,   bold=True)
+    footer_font = _load_font(FONT_FOOTER, bold=False)
+    line_h      = int(FONT_BODY * LINE_SPACING)   # 57 px at 38pt
+    para_gap    = int(line_h * PARA_GAP_MUL)      # extra space between paragraphs
 
-    # ── Pre-wrap all paragraphs to measure total text height ──────────────────
-    # Use a throw-away draw surface for measurement so we don't need the
-    # real overlay draw object before we know the y_start position.
+    # ── Pre-wrap paragraphs ────────────────────────────────────────────────────
     dummy_img  = Image.new("RGB", (1, 1))
     dummy_draw = ImageDraw.Draw(dummy_img)
 
@@ -368,23 +416,30 @@ def _compose_bottom_panel(paragraphs: list[str]) -> Image.Image:
         else:
             all_wrapped.append([])
 
-    n_nonempty  = sum(1 for w in all_wrapped if w)
-    total_lines = sum(len(w) for w in all_wrapped)
-    total_h     = total_lines * line_h + max(0, n_nonempty - 1) * para_gap
-
-    # Vertically centre with a minimum top margin of 50 px
-    y_start = max(50, (BOTTOM_H - total_h) // 2)
-
-    # ── Draw ──────────────────────────────────────────────────────────────────
-    y = y_start
-    for wrapped in all_wrapped:
+    # ── Draw paragraphs starting 30 px from the top ───────────────────────────
+    y = TEXT_TOP_MARGIN
+    for idx, wrapped in enumerate(all_wrapped):
         if not wrapped:
             y += line_h
             continue
         for line in wrapped:
             _draw_line(draw, line, normal_font, bold_font, TEXT_LEFT, y)
             y += line_h
-        y += para_gap
+        if idx < len(all_wrapped) - 1:
+            y += para_gap   # gap between paragraphs but not after the last one
+
+    # ── CTA footer: separator line + follow text ──────────────────────────────
+    sep_y = y + FOOTER_GAP
+    draw.rectangle(
+        [(TEXT_LEFT, sep_y), (TEXT_RIGHT, sep_y + FOOTER_SEP_H)],
+        fill=(*CYAN, 200),   # slightly transparent cyan line
+    )
+    draw.text(
+        (TEXT_LEFT, sep_y + FOOTER_SEP_H + FOOTER_TEXT_PAD),
+        FOOTER_TEXT,
+        font=footer_font,
+        fill=(*CYAN, 220),
+    )
 
     panel_rgba = panel.convert("RGBA")
     panel_rgba.alpha_composite(overlay)
