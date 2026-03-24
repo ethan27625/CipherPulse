@@ -18,8 +18,11 @@ Motion / audio
   Top section: FFmpeg zoompan (1.00→1.03) applied to each still frame, then
   xfade crossfades (1.5 s each) stitch the clips into one 1080×700 video.
   Bottom section: a still PNG that never moves.
-  Both halves are combined with FFmpeg pad + overlay.
-  A licensed background track is mixed at 35 % volume with a 1 s fade-out.
+  Both halves are combined with FFmpeg pad + RGBA overlay (transparent top /
+  opaque bottom) — the overlay is the final paint layer so xfade edge artifacts
+  in the top video can never bleed into the text zone.
+  A licensed background track is mixed at 25 % volume with a 1 s fade-out.
+  Dark/ambient tracks are preferred; SoundHelix is used as fallback.
 
 Duration  : DEFAULT_DURATION = 20 s
 Output    : 1080×1920 MP4, H.264 CRF 18, 30 fps, AAC 192k
@@ -67,7 +70,7 @@ FPS              = 30
 ZOOM_START       = 1.00
 ZOOM_END         = 1.03   # 3 % zoom on top images — more noticeable than full-canvas
 TOP_XFADE        = 1.5    # crossfade duration between top images (seconds)
-MUSIC_VOLUME     = 0.35
+MUSIC_VOLUME     = 0.25   # background atmosphere — not foreground
 
 # ── Typography ────────────────────────────────────────────────────────────────
 FONT_BODY    = 38          # px — larger font for shorter/punchier 2-para format
@@ -239,7 +242,16 @@ def _draw_line(
 # ── Music picker ──────────────────────────────────────────────────────────────
 
 def _pick_music() -> Optional[Path]:
-    """Return a random licensed track from assets/music/, or None if empty."""
+    """
+    Return a licensed track from assets/music/, preferring dark/ambient tones.
+
+    Selection priority:
+      1. Any track whose filename contains "dark", "ambient", "atmospheric", or
+         "cinematic" (case-insensitive) — good for Jamendo dark ambient upgrades.
+      2. If none match, fall back to a random track from the full licensed pool.
+
+    Volume is always set to MUSIC_VOLUME (0.25) — background atmosphere only.
+    """
     import random
     from src.download_safe_music import verify_track
 
@@ -252,6 +264,19 @@ def _pick_music() -> Optional[Path]:
     if not licensed:
         log.warning("No licensed tracks — producing silent video")
         return None
+
+    PREFERRED_KEYWORDS = {"dark", "ambient", "atmospheric", "cinematic"}
+    preferred = [
+        p for p in licensed
+        if any(kw in p.stem.lower() for kw in PREFERRED_KEYWORDS)
+    ]
+    if preferred:
+        chosen = random.choice(preferred)
+        log.debug(f"Picked preferred dark/ambient track: {chosen.name}")
+        return chosen
+
+    # No keyword match — use any licensed track at the reduced volume
+    log.debug("No dark/ambient tracks found — using random licensed track")
     return random.choice(licensed)
 
 
@@ -384,6 +409,10 @@ def _make_top_video(
         f"x='iw/2-(iw/zoom/2)':"
         f"y='ih/2-(ih/zoom/2)':"
         f"d={n_f}:s={CANVAS_W}x{IMAGE_H}:fps={FPS},"
+        # Hard-clip to exactly the top zone — prevents any sub-pixel edge
+        # artifacts from zoompan bleeding into the bottom panel area.
+        f"crop={CANVAS_W}:{IMAGE_H}:0:0,"
+        f"setsar=1,"
         f"format=yuv420p"
     )
 
@@ -427,37 +456,48 @@ def _make_top_video(
 # ── Final video composer ──────────────────────────────────────────────────────
 
 def _make_final_video(
-    top_video:   Path,
-    bottom_png:  Path,
-    music:       Optional[Path],
-    duration:    float,
-    output:      Path,
+    top_video:      Path,
+    overlay_png:    Path,
+    music:          Optional[Path],
+    duration:       float,
+    output:         Path,
 ) -> None:
     """
-    Combine the animated 1080×700 top video with the static 1080×1220 bottom
-    panel and background music into the final 1080×1920 MP4.
+    Combine the animated 1080×700 top video with a full-canvas RGBA overlay
+    and background music into the final 1080×1920 MP4.
+
+    overlay_png is a 1080×1920 RGBA image where:
+      • top 700 px   — fully transparent (lets the animated top video show through)
+      • bottom 1220 px — solid BG_COLOR + rendered text (fully opaque)
+
+    Compositing is done AFTER padding so the bottom panel is the final paint
+    layer: any xfade edge artifacts in the top video are covered by the opaque
+    bottom section, completely preventing bleed into the text zone.
 
     FFmpeg filter graph:
-      • pad: extend top video from 1080×700 to 1080×1920 (dark fill below)
-      • overlay: place the bottom panel PNG at y=700 on the padded frame
-      • (optional) amix: music at 35% volume with 1s fade-out
+      • pad:     extend top video from 1080×700 to 1080×1920 (dark fill below)
+      • overlay: paint the RGBA overlay at 0:0 using alpha — top is transparent
+                 (animated video shows through), bottom is opaque (text visible)
+      • (optional) audio: music at 25% volume with 1s fade-out
     """
     fade_st = max(0.0, duration - 1.0)
     bg_hex  = f"0x{BG_COLOR[0]:02x}{BG_COLOR[1]:02x}{BG_COLOR[2]:02x}"  # 0x0a0a0f
 
     cmd = ["ffmpeg", "-y",
            "-i", str(top_video),
-           # Bottom panel: looped still image for the full duration
+           # Full-canvas RGBA overlay: transparent top, opaque bottom text section
            "-loop", "1", "-framerate", str(FPS),
-           "-t", f"{duration:.3f}", "-i", str(bottom_png)]
+           "-t", f"{duration:.3f}", "-i", str(overlay_png)]
 
     if music:
         cmd += ["-stream_loop", "-1", "-i", str(music)]
 
-    # Pad top video to full canvas height, then overlay the bottom panel
+    # Pad top video to full canvas, then paint the RGBA overlay on top.
+    # format=auto tells FFmpeg to respect the PNG alpha channel, so only the
+    # opaque bottom section is painted — the transparent top passes through.
     fc_parts = [
         f"[0:v]pad={CANVAS_W}:{CANVAS_H}:0:0:color={bg_hex}[padded]",
-        f"[padded][1:v]overlay=0:{IMAGE_H}:shortest=0[vout]",
+        f"[padded][1:v]overlay=0:0:format=auto[vout]",
     ]
     if music:
         fc_parts.append(
@@ -546,12 +586,20 @@ def assemble_text_card(
 
         # 2. Compose static bottom text panel (1080×1220)
         log.info("Composing bottom text panel…")
-        bottom_img  = _compose_bottom_panel(paragraphs)
-        bottom_path = tmp / "bottom.png"
-        bottom_img.save(bottom_path, "PNG")
+        bottom_img = _compose_bottom_panel(paragraphs)
 
-        # 3. Build slide_0.png for the orchestrator's thumbnail generator
-        #    = first top frame pasted above the bottom panel → full 1080×1920
+        # 3. Build the full-canvas RGBA overlay (1080×1920):
+        #    • top 700 px    → fully transparent (animated top video shows through)
+        #    • bottom 1220 px → solid BG + text (fully opaque)
+        #    This overlay is the LAST paint layer in the FFmpeg composite,
+        #    guaranteeing any xfade edge artifacts never bleed into the text zone.
+        full_overlay = Image.new("RGBA", (CANVAS_W, CANVAS_H), (0, 0, 0, 0))
+        full_overlay.paste(bottom_img.convert("RGBA"), (0, IMAGE_H))
+        overlay_path = tmp / "overlay.png"
+        full_overlay.save(overlay_path, "PNG")
+
+        # 4. Build slide_0.png for the orchestrator's thumbnail generator
+        #    = first top frame pasted above the bottom panel → full 1080×1920 RGB
         frame0  = Image.open(top_frames[0]).convert("RGB")
         canvas  = Image.new("RGB", (CANVAS_W, CANVAS_H), BG_COLOR)
         canvas.paste(frame0,     (0, 0))
@@ -560,13 +608,13 @@ def assemble_text_card(
         canvas.save(slide0_path, "PNG")
         log.info("slide_0.png saved for thumbnail generation")
 
-        # 4. Build animated top video (1080×700) — Ken Burns + xfade
+        # 5. Build animated top video (1080×700) — Ken Burns + xfade
         top_video_path = tmp / "top.mp4"
         _make_top_video(top_frames, duration, top_video_path)
 
-        # 5. Combine: animated top + static bottom + music → final video
+        # 6. Combine: animated top + RGBA overlay + music → final video
         video_out = output_dir / "video.mp4"
-        _make_final_video(top_video_path, bottom_path, music, duration, video_out)
+        _make_final_video(top_video_path, overlay_path, music, duration, video_out)
 
     return video_out
 
