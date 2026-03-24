@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 import time
 from pathlib import Path
 from typing import Optional
@@ -421,6 +422,37 @@ def _save_meta(clip_path: Path, video: dict, video_file: dict, search_tag: str) 
     meta_path.write_text(json.dumps(meta, indent=2))
 
 
+# ── Audio strip ────────────────────────────────────────────────────────────────
+
+def _strip_audio(clip_path: Path) -> None:
+    """
+    Remove the audio track from a Pexels clip in-place.
+
+    Pexels clips sometimes contain copyrighted background music.  We only want
+    our own audio (TTS voice + ambient drone), so we strip the clip's original
+    audio at download time using FFmpeg's -an flag and -c:v copy (no re-encode).
+
+    Writes to a temp file then atomically renames over the original so a failed
+    strip never corrupts the cached clip.
+    """
+    tmp = clip_path.with_suffix(".noaudio.mp4")
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", str(clip_path),
+             "-c:v", "copy", "-an", str(tmp)],
+            capture_output=True, text=True,
+        )
+        if r.returncode == 0 and tmp.exists() and tmp.stat().st_size > 0:
+            tmp.replace(clip_path)
+            log.debug(f"Audio stripped: {clip_path.name}")
+        else:
+            log.warning(f"Audio strip failed for {clip_path.name}: {r.stderr[-200:]}")
+            tmp.unlink(missing_ok=True)
+    except Exception as exc:
+        log.warning(f"Audio strip error for {clip_path.name}: {exc}")
+        tmp.unlink(missing_ok=True)
+
+
 # ── Cache management ───────────────────────────────────────────────────────────
 
 def get_cached_clips(category: str, limit: int = 20) -> list[Path]:
@@ -521,6 +553,7 @@ def fetch_clip_for_tag(
             dest_path = cat_dir / f"pexels-{pexels_id}.mp4"
             try:
                 _download_clip(video_file["link"], dest_path)
+                _strip_audio(dest_path)
                 _save_meta(dest_path, video, video_file, tag)
                 return dest_path
             except Exception as e:
