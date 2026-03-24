@@ -51,6 +51,17 @@ OUTPUT_ROOT  = Path("output")
 RUN_LOG_PATH = OUTPUT_ROOT / "run_log.json"
 QUEUE_PATH   = Path("config/schedule_queue.json")
 
+# Safe Pexels search terms for text-card format — ignores AI-generated visual_tags
+# to guarantee consistently dark/on-brand imagery.
+TEXT_CARD_IMAGE_TERMS = [
+    "cybersecurity",
+    "hacking",
+    "code terminal",
+    "server room dark",
+    "cyber security dark",
+    "programming code screen",
+]
+
 
 # ── Run log helpers ────────────────────────────────────────────────────────────
 
@@ -205,10 +216,18 @@ def run_pipeline(
 
         # ── Stage 5: Footage ───────────────────────────────────────────────────
         log.info("Stage 5/12 — Downloading footage clips…")
+        import random as _random
         from src.footage_downloader import fetch_clips_for_script
         clip_target = 3 if is_text_card else 10
+        # Text card uses a hardcoded safe list so imagery is always dark/on-brand,
+        # regardless of what visual_tags the script writer generated.
+        clip_tags = (
+            _random.sample(TEXT_CARD_IMAGE_TERMS, min(3, len(TEXT_CARD_IMAGE_TERMS)))
+            if is_text_card
+            else content_visual_tags
+        )
         clips = fetch_clips_for_script(
-            visual_tags=content_visual_tags,
+            visual_tags=clip_tags,
             target_clips=clip_target,
         )
         record["footage"] = {"clip_count": len(clips), "paths": [str(c) for c in clips]}

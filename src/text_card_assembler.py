@@ -72,6 +72,7 @@ MUSIC_VOLUME     = 0.25      # background atmosphere only
 BG_COLOR    = (10,   10,   15)    # #0a0a0f  — dark background
 CYAN        = (0,    242,  234)   # #00F2EA  — key term highlight
 WHITE       = (255,  255,  255)   # #FFFFFF  — body text
+LIGHT_GRAY  = (180,  180,  180)   # #B4B4B4  — CTA footer text
 SHADOW      = (0,    0,    0,    180)  # RGBA — drop shadow
 
 # ── Font sizes ────────────────────────────────────────────────────────────────
@@ -290,6 +291,29 @@ def _pick_music() -> Optional[Path]:
         log.info(f"Music: {chosen.name}")
         return chosen
 
+    # Fallback: generate a low-frequency drone via FFmpeg sine wave generator.
+    # This is a CipherPulse-generated tone — not an external track — so it does
+    # not need a music_licenses.json entry.
+    drone_path = MUSIC_DIR / "dark_ambient_drone.wav"
+    if not drone_path.exists():
+        log.info("Generating sine-wave drone fallback (80 Hz, lowpass 200 Hz)…")
+        MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+        r = subprocess.run(
+            ["ffmpeg", "-y",
+             "-f", "lavfi", "-i", "sine=frequency=80:duration=20",
+             "-af", "lowpass=f=200,volume=0.3",
+             str(drone_path)],
+            capture_output=True, text=True,
+        )
+        if r.returncode != 0:
+            log.warning(f"Drone generation failed: {r.stderr[-200:]}. Will be silent.")
+            return None
+        log.info(f"Drone saved: {drone_path.name}")
+
+    if drone_path.exists():
+        log.info(f"Music: {drone_path.name} (generated fallback)")
+        return drone_path
+
     log.warning(
         f"No dark/ambient tracks available ({len(licensed)} licensed tracks exist "
         "but none match dark keywords). Video will be silent. "
@@ -355,18 +379,13 @@ def _compose_frame(
         if idx < len(paragraphs) - 1:
             y += para_gap   # gap between paragraphs, not after the last one
 
-    # ── 4b. CTA footer: separator line + follow text ──────────────────────────
-    sep_y = y + 28
-    draw.rectangle(
-        [(TEXT_LEFT, sep_y), (TEXT_RIGHT, sep_y + 2)],
-        fill=(*CYAN, 180),
-    )
-    draw.text(
-        (TEXT_LEFT, sep_y + 10),
-        "Follow @CipherPulse  ·  Daily Cyber Threats & AI News",
-        font=footer_font,
-        fill=(*CYAN, 210),
-    )
+    # ── 4b. CTA footer — fixed in bottom 10% of frame, centered, light gray ───
+    CTA_TEXT = "Follow @CipherPulse  ·  Daily Cyber Threats & AI News"
+    cta_y    = int(CANVAS_H * 0.90)   # 1728 px — safely in the bottom 10%
+    cta_bbox = draw.textbbox((0, 0), CTA_TEXT, font=footer_font)
+    cta_w    = cta_bbox[2] - cta_bbox[0]
+    cta_x    = (CANVAS_W - cta_w) // 2
+    draw.text((cta_x, cta_y), CTA_TEXT, font=footer_font, fill=(*LIGHT_GRAY, 210))
 
     # ── 5. Composite overlay onto canvas ─────────────────────────────────────
     canvas_rgba = canvas.convert("RGBA")
