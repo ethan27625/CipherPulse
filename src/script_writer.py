@@ -264,8 +264,8 @@ MARKUP RULES
 - Keep asterisks tight around the term — no leading/trailing spaces inside them
 
 CONTENT RULES
-- Total word count: 60-75 words MAXIMUM across all 3 paragraphs. Count strictly — if you exceed 75 words, cut ruthlessly.
-- Each paragraph: 2-3 SHORT sentences, 15-25 words per paragraph
+- Total word count: 45-60 words HARD MAXIMUM across all 3 paragraphs. Count every word. If over 60, delete whole sentences until under.
+- Each paragraph: 2 sentences ONLY, 15-20 words per paragraph
 - Short punchy sentences (this is read on a phone screen, not an article)
 - Include at least one specific number, date, or dollar figure in each paragraph
 - No hashtags, no emojis, no "Follow us", no calls-to-action on the card itself
