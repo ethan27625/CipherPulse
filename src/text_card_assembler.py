@@ -362,7 +362,7 @@ def _compose_frame(
     # ── 4. Paragraph text ─────────────────────────────────────────────────────
     normal_font  = _load_font(FONT_BODY, bold=False)
     bold_font    = _load_font(FONT_BODY, bold=True)
-    footer_font  = _load_font(20,        bold=False)
+    footer_font  = _load_font(28,        bold=False)
     line_h       = int(FONT_BODY * LINE_SPACING)       # 51 px
     para_gap     = int(line_h * PARA_GAP_MUL)          # extra gap between paragraphs
 
