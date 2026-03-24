@@ -234,85 +234,85 @@
     "id": 34,
     "topic": "The Twitch Leak: All Source Code, Streamer Earnings, and Internal Data Exposed",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 35,
     "topic": "GoDaddy's Triple Breach: Same Company, Same Attacker, Three Separate Times",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 36,
     "topic": "The Capital One Breach: Ex-AWS Engineer Exploited SSRF to Steal 100M Records",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 37,
     "topic": "Verkada Camera Hack: 150,000 Security Cameras at Tesla, Jails, Hospitals Exposed",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 38,
     "topic": "The SIM Swap Epidemic: How Criminals Steal Your Phone Number to Drain Accounts",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 39,
     "topic": "Lazarus Group: North Korea's State-Sponsored Hacking Team That Funds the Regime",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 40,
     "topic": "Anonymous vs. HBGary Federal: The Day Hacktivists Destroyed a Security Firm",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 41,
     "topic": "The iCloud Celebgate: How 'The Fappening' Exploited Weak Apple Security",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 42,
     "topic": "Mt. Gox: The $450M Bitcoin Exchange Collapse That Almost Killed Crypto",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 43,
     "topic": "Poly Network DeFi Hack: $611M Stolen \u2014 Then the Hacker Returned It All",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 44,
     "topic": "The Ronin Bridge Hack: North Korea Stole $625M in Crypto in One Transaction",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 45,
     "topic": "Wormable BlueKeep: Microsoft's Nightmare Vulnerability Affecting All Old Windows",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 46,
