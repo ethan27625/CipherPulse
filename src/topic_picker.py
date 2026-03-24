@@ -26,6 +26,17 @@ TOPICS_PATH = Path("topics.json")
 # without needing separate format-7 entries in topics.json.
 TEXT_CARD_PROBABILITY = 1.00  # set to 0.30 to resume mixed mode
 
+# High-search-volume cybersecurity keywords that boost a topic's selection
+# weight during random_pick mode.  Topics containing any of these terms are
+# 3× more likely to be selected than topics without them.
+# This is a soft bias — non-matching topics can still be chosen.
+TREND_KEYWORDS = [
+    "ransomware", "password", "data breach", "social engineering",
+    "phishing", "vpn", "dark web", "two factor authentication",
+    "zero day", "malware",
+]
+TREND_WEIGHT_MULTIPLIER = 3  # matching topics get 3× the base weight
+
 
 @dataclass
 class Topic:
@@ -67,9 +78,24 @@ def pick_topic(random_pick: bool = False) -> Topic:
         unused = all_topics
 
     if random_pick:
-        chosen_data = random.choice(unused)
+        # Trend-weighted random: topics matching TREND_KEYWORDS get a higher
+        # selection weight.  Non-matching topics still have weight=1 so they
+        # can always be chosen — this is a soft bias, not a hard filter.
+        topic_lower = [t["topic"].lower() for t in unused]
+        weights = [
+            TREND_WEIGHT_MULTIPLIER
+            if any(kw in tl for kw in TREND_KEYWORDS)
+            else 1
+            for tl in topic_lower
+        ]
+        trending_count = sum(1 for w in weights if w > 1)
+        log.debug(
+            f"Trend-weighted pick: {trending_count}/{len(unused)} topics match "
+            f"keywords (weight={TREND_WEIGHT_MULTIPLIER}×)"
+        )
+        chosen_data = random.choices(unused, weights=weights, k=1)[0]
     else:
-        # Lowest id first — deterministic ordering
+        # Lowest id first — deterministic ordering (used by cron/GitHub Actions)
         chosen_data = min(unused, key=lambda t: t["id"])
 
     # Mark as used

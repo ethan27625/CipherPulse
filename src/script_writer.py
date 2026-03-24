@@ -217,6 +217,7 @@ class TextCardContent:
     topic:        str
     title:        str              # YouTube title / SEO — NOT shown on video
     category:     str              # DATA BREACH / RANSOMWARE / etc. (SEO context)
+    hook_line:    str              # ≤10-word opening hook shown for 1.5s before card
     paragraphs:   list[str]        # 3 story paragraphs with *asterisk cyan markup*
     visual_tags:  list[str]        # 2-3 Pexels search terms for the top image
     raw_response: str = field(default="", repr=False)
@@ -228,6 +229,7 @@ class TextCardContent:
             f"TOPIC: {self.topic}",
             f"FORMAT: 7 — Text Card (single frame)",
             f"CATEGORY: {self.category}",
+            f"HOOK_LINE: {self.hook_line}",
             f"VISUAL_TAGS: {' | '.join(self.visual_tags)}",
             "",
         ]
@@ -251,6 +253,7 @@ CHANNEL IDENTITY
 OUTPUT FORMAT (output ONLY this block, exact field names, one per line):
 TITLE: <compelling YouTube SEO title, 50-80 characters — never shown on video>
 CATEGORY: <ALL CAPS, e.g. DATA BREACH / RANSOMWARE / AI THREAT / PRIVACY / FRAUD / HACKING>
+HOOK_LINE: <under 10 words — curiosity or shock, makes viewer keep watching. Examples: "One mistake. 153 million passwords exposed." or "This hacker returned $611 million.">
 VISUAL_TAGS: <Pexels search term 1> | <Pexels search term 2> | <Pexels search term 3>
 PARAGRAPH_1: <Hook — what happened, lead with the most dramatic fact>
 PARAGRAPH_2: <Context — backstory, how it happened, timeline>
@@ -326,8 +329,9 @@ def generate_text_card_content(
         m = re.search(rf"^{key}:\s*(.+)$", raw, re.MULTILINE)
         return m.group(1).strip() if m else ""
 
-    title    = _field("TITLE")    or topic[:80]
-    category = _field("CATEGORY") or "CYBER THREAT"
+    title     = _field("TITLE")     or topic[:80]
+    category  = _field("CATEGORY")  or "CYBER THREAT"
+    hook_line = _field("HOOK_LINE")  # empty string if missing — handled in assembler
 
     vt_raw      = _field("VISUAL_TAGS")
     visual_tags = [t.strip() for t in vt_raw.split("|") if t.strip()][:3]
@@ -349,12 +353,14 @@ def generate_text_card_content(
         topic=topic,
         title=title,
         category=category,
+        hook_line=hook_line,
         paragraphs=paragraphs,
         visual_tags=visual_tags,
         raw_response=raw,
     )
     log.info(
         f"Text card — [{category}] {title!r} | "
+        f"hook={hook_line!r} | "
         f"{sum(len(p.split()) for p in paragraphs)} words across 3 paragraphs"
     )
     return content

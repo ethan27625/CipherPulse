@@ -241,6 +241,7 @@ def run_pipeline(
                 paragraphs=tc.paragraphs,
                 clip_paths=clips,
                 output_dir=out_dir,
+                hook_line=tc.hook_line,
             )
         else:
             log.info("Stage 6/12 — Assembling voiceover video with FFmpeg…")

@@ -63,6 +63,7 @@ TEXT_MAX_W   = TEXT_RIGHT - TEXT_LEFT   # 960 px
 
 # ── Timing ────────────────────────────────────────────────────────────────────
 DEFAULT_DURATION = 16.0      # 15-18 s — reading time for 80-120 words
+HOOK_DURATION    = 1.5       # opening hook frame duration (prepended before card)
 FPS              = 30
 ZOOM_START       = 1.00
 ZOOM_END         = 1.02      # very subtle — 2 % zoom over full clip
@@ -77,6 +78,7 @@ SHADOW      = (0,    0,    0,    180)  # RGBA — drop shadow
 
 # ── Font sizes ────────────────────────────────────────────────────────────────
 FONT_BODY    = 34
+FONT_HOOK    = 58   # hook frame — large bold, bigger than paragraph text
 FONT_WM      = 20   # "CP" watermark
 LINE_SPACING = 1.5  # line height multiplier
 PARA_GAP_MUL = 1.8  # extra gap between paragraphs (multiplier of line height)
@@ -341,6 +343,65 @@ def _pick_music() -> Optional[Path]:
     return None
 
 
+# ── Hook frame composer ───────────────────────────────────────────────────────
+
+def _compose_hook_frame(clip_path: Path, hook_text: str) -> Image.Image:
+    """
+    Build the 1080×1920 hook frame shown for the first 1.5 seconds.
+
+    Layout: Pexels image fill-cropped to full canvas, semi-transparent dark
+    overlay for readability, hook text centered both horizontally and
+    vertically (slightly above centre at 40% down).  Font is FONT_HOOK (58 px)
+    — noticeably larger than the paragraph body text.
+    """
+    canvas = Image.new("RGB", (CANVAS_W, CANVAS_H), BG_COLOR)
+
+    # Full-canvas image (fill-cropped 1080×1920)
+    frame   = _extract_frame(clip_path)
+    bg_img  = _resize_fill(frame, CANVAS_W, CANVAS_H)
+    canvas.paste(bg_img, (0, 0))
+
+    # Dark overlay to ensure text is readable over any image
+    overlay = Image.new("RGBA", (CANVAS_W, CANVAS_H), (0, 0, 0, 0))
+    draw    = ImageDraw.Draw(overlay)
+    draw.rectangle([(0, 0), (CANVAS_W, CANVAS_H)], fill=(0, 0, 0, 160))
+
+    # Hook text — centered, large, bold white with drop shadow
+    hook_font    = _load_font(FONT_HOOK, bold=True)
+    normal_font  = _load_font(FONT_BODY, bold=False)  # for space measurement
+    hook_tokens  = _tokenize(hook_text)                # supports *cyan* markup
+
+    # Wrap at 880px (slightly narrower margin for the big font)
+    hook_lines   = _wrap_tokens(hook_tokens, hook_font, hook_font, CANVAS_W - 200, draw)
+
+    line_h       = int(FONT_HOOK * 1.3)
+    total_text_h = len(hook_lines) * line_h
+    # Place block starting at 40% of frame height, minus half the text height
+    y_start      = int(CANVAS_H * 0.40) - total_text_h // 2
+
+    for line in hook_lines:
+        # Measure line width to center it
+        cx = TEXT_LEFT
+        line_w = sum(
+            draw.textbbox((0, 0), word, font=hook_font)[2]
+            for word, _ in line
+        ) + max(0, len(line) - 1) * draw.textbbox((0, 0), " ", font=hook_font)[2]
+        cx = (CANVAS_W - line_w) // 2
+
+        for idx, (word, is_cyan) in enumerate(line):
+            color = CYAN if is_cyan else WHITE
+            draw.text((cx + 2, y_start + 2), word, font=hook_font, fill=(0, 0, 0, 200))
+            draw.text((cx,     y_start    ), word, font=hook_font, fill=(*color, 255))
+            cx += draw.textbbox((0, 0), word, font=hook_font)[2]
+            if idx < len(line) - 1:
+                cx += draw.textbbox((0, 0), " ", font=hook_font)[2]
+        y_start += line_h
+
+    canvas_rgba = canvas.convert("RGBA")
+    canvas_rgba.alpha_composite(overlay)
+    return canvas_rgba.convert("RGB")
+
+
 # ── Frame composer ────────────────────────────────────────────────────────────
 
 def _compose_frame(
@@ -415,33 +476,55 @@ def _compose_frame(
 # ── Video maker ───────────────────────────────────────────────────────────────
 
 def _make_video(
-    frame_path:  Path,
-    output_path: Path,
-    music_path:  Optional[Path],
-    duration:    float,
+    frame_path:      Path,
+    output_path:     Path,
+    music_path:      Optional[Path],
+    duration:        float,
+    hook_frame_path: Optional[Path] = None,
 ) -> None:
     """
     Convert a still PNG into a video with Ken Burns zoom and background music.
 
-    Ken Burns: zoom from ZOOM_START (1.00) to ZOOM_END (1.02) over the full
-    duration — barely perceptible motion that prevents a completely frozen frame.
+    If hook_frame_path is provided, a 1.5 s static hook frame is prepended
+    (hard cut) before the main zoompan section.  Total duration is then
+    HOOK_DURATION + duration.  Both segments share the same music track,
+    which is trimmed to the total duration.
 
-    Audio: music at MUSIC_VOLUME (35 %) with a 1 s fade-out at the end.
+    Ken Burns: zoom from ZOOM_START (1.00) to ZOOM_END (1.02) over the main
+    card duration — applied to the main frame only, not the hook.
+
+    Audio: music at MUSIC_VOLUME with a 1 s fade-out at the end.
     If no music is available, produces a silent video.
     """
     n_frames = int(duration * FPS)
     inc      = (ZOOM_END - ZOOM_START) / max(n_frames, 1)
-    fade_st  = max(0.0, duration - 1.0)
 
-    cmd = ["ffmpeg", "-y",
-           "-loop", "1", "-framerate", str(FPS), "-t", str(duration),
-           "-i", str(frame_path)]
+    use_hook     = hook_frame_path is not None and hook_frame_path.exists()
+    total_dur    = (HOOK_DURATION + duration) if use_hook else duration
+    fade_st      = max(0.0, total_dur - 1.0)
+
+    # ── Build input list ──────────────────────────────────────────────────────
+    cmd = ["ffmpeg", "-y"]
+
+    if use_hook:
+        # Input 0: hook frame (static, 1.5 s)
+        cmd += ["-loop", "1", "-framerate", str(FPS), "-t", str(HOOK_DURATION),
+                "-i", str(hook_frame_path)]
+        # Input 1: main frame (zoompan, `duration` s)
+        cmd += ["-loop", "1", "-framerate", str(FPS), "-t", str(duration),
+                "-i", str(frame_path)]
+        music_idx = 2
+    else:
+        # Input 0: main frame only (original behaviour)
+        cmd += ["-loop", "1", "-framerate", str(FPS), "-t", str(duration),
+                "-i", str(frame_path)]
+        music_idx = 1
 
     if music_path:
         cmd += ["-stream_loop", "-1", "-i", str(music_path)]
 
-    # Video filter: zoompan → format
-    vf = (
+    # ── Build filter_complex ──────────────────────────────────────────────────
+    zoompan_vf = (
         f"zoompan="
         f"z='min(zoom+{inc:.8f},{ZOOM_END})':"
         f"x='iw/2-(iw/zoom/2)':"
@@ -450,34 +533,53 @@ def _make_video(
         f"format=yuv420p"
     )
 
-    if music_path:
-        af = (
-            f"[1:a]volume={MUSIC_VOLUME},"
-            f"atrim=0:{duration:.3f},"
-            f"afade=t=out:st={fade_st:.3f}:d=1[aout]"
+    if use_hook:
+        hook_scale = (
+            f"[0:v]scale={CANVAS_W}:{CANVAS_H}:"
+            f"force_original_aspect_ratio=disable,format=yuv420p[hook]"
         )
-        fc = f"[0:v]{vf}[vout];{af}"
-        cmd += ["-filter_complex", fc,
-                "-map", "[vout]", "-map", "[aout]"]
+        main_zoom  = f"[1:v]{zoompan_vf}[main]"
+        concat     = "[hook][main]concat=n=2:v=1:a=0[vout]"
+        if music_path:
+            audio_f = (
+                f"[{music_idx}:a]volume={MUSIC_VOLUME},"
+                f"atrim=0:{total_dur:.3f},"
+                f"afade=t=out:st={fade_st:.3f}:d=1[aout]"
+            )
+            fc = f"{hook_scale};{main_zoom};{concat};{audio_f}"
+            cmd += ["-filter_complex", fc, "-map", "[vout]", "-map", "[aout]"]
+        else:
+            fc = f"{hook_scale};{main_zoom};{concat}"
+            cmd += ["-filter_complex", fc, "-map", "[vout]"]
     else:
-        fc = f"[0:v]{vf}[vout]"
-        cmd += ["-filter_complex", fc,
-                "-map", "[vout]"]
+        # Original single-frame path
+        if music_path:
+            af = (
+                f"[{music_idx}:a]volume={MUSIC_VOLUME},"
+                f"atrim=0:{total_dur:.3f},"
+                f"afade=t=out:st={fade_st:.3f}:d=1[aout]"
+            )
+            fc = f"[0:v]{zoompan_vf}[vout];{af}"
+            cmd += ["-filter_complex", fc, "-map", "[vout]", "-map", "[aout]"]
+        else:
+            fc = f"[0:v]{zoompan_vf}[vout]"
+            cmd += ["-filter_complex", fc, "-map", "[vout]"]
 
     cmd += [
         "-c:v", "libx264", "-profile:v", "high",
-        "-crf", "18",          # near-lossless quality (default 23 was too soft)
-        "-preset", "slow",     # better compression at same CRF vs fast/medium
+        "-crf", "18",
+        "-preset", "slow",
         "-pix_fmt", "yuv420p",
         "-r", str(FPS),
-        "-s", f"{CANVAS_W}x{CANVAS_H}",   # lock output to exactly 1080×1920
-        "-t", str(duration),
+        "-s", f"{CANVAS_W}x{CANVAS_H}",
+        "-t", str(total_dur),
         "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
         str(output_path),
     ]
 
-    log.info(f"FFmpeg: single-frame Ken Burns → {output_path.name}  ({duration:.0f}s)")
+    label = f"{total_dur:.1f}s" + (" (1.5s hook + main)" if use_hook else "")
+    log.info(f"FFmpeg: Ken Burns → {output_path.name}  ({label})")
     log.debug("FFmpeg command: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
@@ -493,6 +595,7 @@ def assemble_text_card(
     clip_paths:  list[Path],
     output_dir:  Path,
     duration:    float = DEFAULT_DURATION,
+    hook_line:   str   = "",
 ) -> Path:
     """
     Assemble a single-frame news card Short.
@@ -500,16 +603,21 @@ def assemble_text_card(
     Steps:
       1. Extract a still frame from the first clip → top 1080×700 image.
       2. Pillow renders the full 1080×1920 composite (image + text).
-      3. The composed frame is saved as frame.png (also copied to slide_0.png
-         for thumbnail generation by the orchestrator).
-      4. FFmpeg applies subtle Ken Burns zoom + background music → video.mp4.
+      3. If hook_line is provided, renders a separate 1080×1920 hook frame
+         (full-canvas image + centered large hook text) shown for 1.5 s before
+         the main card.  If hook_line is empty or generation fails, the hook
+         is silently skipped — the pipeline continues normally.
+      4. FFmpeg: Ken Burns zoom on main card + optional hook prepend + music.
 
     Args:
         paragraphs:  3 story paragraphs.  Key terms wrapped in *asterisks*
                      are rendered in cyan bold; all other text is plain white.
         clip_paths:  At least 1 Pexels clip — first clip provides the top image.
         output_dir:  Directory to write video.mp4 and slide_0.png into.
-        duration:    Video duration in seconds (default 20 s, range 18–22 s).
+        duration:    Main card duration in seconds (default 16 s).
+                     Total video = HOOK_DURATION + duration when hook is used.
+        hook_line:   Short opening hook sentence (≤10 words).  Shown for 1.5 s
+                     before the main card.  Skipped silently if empty.
 
     Returns:
         Path to video.mp4
@@ -525,22 +633,32 @@ def assemble_text_card(
 
     music = _pick_music()
 
-    # ── Compose the full 1080×1920 frame ─────────────────────────────────────
+    # ── Compose the full 1080×1920 main frame ────────────────────────────────
     log.info("Composing 1080×1920 news card frame…")
     frame_img = _compose_frame(clip_paths[0], paragraphs)
 
-    # Save as slide_0.png so orchestrator can build the thumbnail
     slide0_path = output_dir / "slide_0.png"
     frame_img.save(slide0_path, "PNG")
     log.info("slide_0.png saved for thumbnail generation")
 
-    # Also save as frame.png for clarity
     frame_path = output_dir / "frame.png"
     frame_img.save(frame_path, "PNG")
 
+    # ── Optionally compose the hook frame ─────────────────────────────────────
+    hook_frame_path: Optional[Path] = None
+    if hook_line.strip():
+        try:
+            log.info(f"Composing hook frame: {hook_line!r}")
+            hook_img  = _compose_hook_frame(clip_paths[0], hook_line)
+            hook_path = output_dir / "hook_frame.png"
+            hook_img.save(hook_path, "PNG")
+            hook_frame_path = hook_path
+        except Exception as exc:
+            log.warning(f"Hook frame generation failed (skipping hook): {exc}")
+
     # ── Produce the video ─────────────────────────────────────────────────────
     video_out = output_dir / "video.mp4"
-    _make_video(frame_path, video_out, music, duration)
+    _make_video(frame_path, video_out, music, duration, hook_frame_path=hook_frame_path)
 
     return video_out
 

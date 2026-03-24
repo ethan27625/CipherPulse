@@ -631,14 +631,14 @@ def _generate_comment_text(video_title: str, topic: str) -> str:
 
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=80,
+        max_tokens=60,
         system=(
-            "Write a single engaging YouTube comment question. "
-            "Reference the specific topic. "
-            "Make it personal — ask about THEIR experience. "
-            "Include one emoji. "
-            "Under 200 characters. "
-            "No hashtags."
+            "Write a single YouTube comment. "
+            "It MUST be a question that ends with a question mark. "
+            "Reference the specific topic — no generic questions. "
+            "Under 15 words total (count strictly). "
+            "Include one emoji at the end. "
+            "No hashtags. No intro text — just the question."
         ),
         messages=[{
             "role": "user",
