@@ -6,7 +6,8 @@ Layout
   TOP SECTION   (0–700 px)    : 2-3 Pexels images that slowly crossfade into
                                  each other throughout the video.  Each image
                                  has a subtle Ken Burns zoom (1.00 → 1.03).
-                                 "CP" watermark at top-left (20 px, 50 % opacity).
+                                 20 px dark margin at top prevents flush-edge
+                                 cropping.  "CP" watermark at (30, 30).
   BOTTOM SECTION (700–1920 px) : Solid #0a0a0f background — completely static.
                                  2 punchy paragraphs, vertically centred in the
                                  section.  Left-aligned (60 px margin), Oswald
@@ -282,27 +283,46 @@ def _pick_music() -> Optional[Path]:
 
 # ── Top image preparation ─────────────────────────────────────────────────────
 
+TOP_IMAGE_MARGIN = 20   # px of dark space above the image — prevents flush-top cropping
+
 def _prepare_top_frames(clip_paths: list[Path], tmp: Path) -> list[Path]:
     """
-    Extract one still frame from each clip, resize to 1080×700, add the
-    "CP" watermark, and save as a lossless PNG.
+    Extract one still frame from each clip, composite it into a 1080×700
+    canvas with a 20 px top margin, add the "CP" watermark, and save as PNG.
+
+    Layout of each output frame (1080×700):
+      y=0  … y=20  — solid BG_COLOR strip (prevents content flush against top)
+      y=20 … y=700 — source image, center-cropped to 1080×680
+
+    Resizing to 1080×680 (not 1080×700) means less of the portrait is discarded
+    vertically, so faces/heads that sit in the upper portion of the image are
+    no longer cropped off at the frame boundary.
 
     Returns a list of 1080×700 PNG paths suitable for zoompan input.
     """
     wm_font = _load_font(FONT_WM)
     result: list[Path] = []
+    image_area_h = IMAGE_H - TOP_IMAGE_MARGIN   # 680 px
 
     for i, clip in enumerate(clip_paths):
         frame = _extract_frame(clip)
-        top   = _resize_fill(frame, CANVAS_W, IMAGE_H)
-        assert top.size == (CANVAS_W, IMAGE_H), \
-            f"Top frame {i} is {top.size}, expected ({CANVAS_W}, {IMAGE_H})"
 
-        # Draw "CP" watermark at 50 % opacity via RGBA composite
-        rgba = top.convert("RGBA")
+        # Resize source to fill 1080×680, center-cropped
+        img_cropped = _resize_fill(frame, CANVAS_W, image_area_h)
+        assert img_cropped.size == (CANVAS_W, image_area_h), \
+            f"Cropped frame {i} is {img_cropped.size}, expected ({CANVAS_W}, {image_area_h})"
+
+        # Composite onto full 1080×700 canvas — dark strip at top, image below
+        canvas = Image.new("RGB", (CANVAS_W, IMAGE_H), BG_COLOR)
+        canvas.paste(img_cropped, (0, TOP_IMAGE_MARGIN))
+        assert canvas.size == (CANVAS_W, IMAGE_H), \
+            f"Canvas {i} is {canvas.size}, expected ({CANVAS_W}, {IMAGE_H})"
+
+        # Draw "CP" watermark at (30, 30) — 30px from top-left, not on the edge
+        rgba = canvas.convert("RGBA")
         ovl  = Image.new("RGBA", (CANVAS_W, IMAGE_H), (0, 0, 0, 0))
         d    = ImageDraw.Draw(ovl)
-        d.text((20, 20), "CP", font=wm_font, fill=(255, 255, 255, 128))
+        d.text((30, 30), "CP", font=wm_font, fill=(255, 255, 255, 128))
         rgba.alpha_composite(ovl)
 
         out = tmp / f"top_{i}.png"
