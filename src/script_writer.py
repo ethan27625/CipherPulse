@@ -530,7 +530,7 @@ def parse_response(raw: str, topic: str, format_id: int,
 )
 def _call_claude(
     client: anthropic.Anthropic,
-    user_message: str,
+    messages: list[dict],
     system_prompt: str = SYSTEM_PROMPT,
 ) -> str:
     """
@@ -538,7 +538,7 @@ def _call_claude(
 
     Args:
         client:        Anthropic client instance
-        user_message:  The user-turn message (topic + any retry instructions)
+        messages:      Full messages list (supports multi-turn for retry corrections)
         system_prompt: System prompt to use — defaults to the news SYSTEM_PROMPT;
                        pass EDU_SYSTEM_PROMPT for edu mode
 
@@ -549,7 +549,7 @@ def _call_claude(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=system_prompt,
-        messages=[{"role": "user", "content": user_message}],
+        messages=messages,
     )
     return response.content[0].text
 
@@ -625,10 +625,14 @@ Create an original, engaging script about this topic following all format rules.
 """
 
     # ── Script generation loop with duration validation ────────────────────────
-    # If the estimated duration is outside [min_dur, max_dur], re-prompt.
+    # If the estimated duration is outside [min_dur, max_dur], re-prompt using
+    # a multi-turn conversation so Claude sees its own previous output and can
+    # make targeted cuts rather than regenerating from scratch.
     # Max 2 correction attempts before accepting whatever we have.
 
     script: Optional[Script] = None
+    messages: list[dict] = [{"role": "user", "content": user_message}]
+    last_raw: str = ""
 
     for attempt in range(MAX_SCRIPT_RETRIES + 1):
         if attempt > 0:
@@ -639,21 +643,29 @@ Create an original, engaging script about this topic following all format rules.
                 f"[{min_dur}-{max_dur}s]. "
                 f"Retry {attempt}/{MAX_SCRIPT_RETRIES} — requesting {direction} script."
             )
-            user_message += (
-                f"\n\nPREVIOUS ATTEMPT WAS TOO {direction.upper()}. "
-                f"Rewrite the script to be approximately {target_words} words "
-                f"(spoken duration {min_dur}-{max_dur} seconds). "
-                f"Keep the same topic and structure but adjust the content volume."
-            )
+            # Multi-turn: show Claude its own previous output, then ask for a fix.
+            messages.append({"role": "assistant", "content": last_raw})
+            messages.append({
+                "role": "user",
+                "content": (
+                    f"That script is too {direction}. It came in at "
+                    f"{script.est_words} words (~{script.est_duration_seconds:.0f}s) "
+                    f"but the target is {min_dur}-{max_dur} seconds "
+                    f"(~{target_words} words). "
+                    f"Rewrite it to hit that word count exactly. "
+                    f"Keep the same topic, hook, and structure — just cut or expand the body. "
+                    f"Return only the formatted block, no explanation."
+                ),
+            })
 
         log.info(f"Calling Claude (attempt {attempt + 1}) — topic: {topic[:60]}")
         try:
-            raw = _call_claude(client, user_message, system_prompt=sys_prompt)
+            last_raw = _call_claude(client, messages, system_prompt=sys_prompt)
         except Exception as e:
             log.error(f"Claude API call failed after retries: {e}")
             raise RuntimeError(f"Script generation failed: {e}") from e
 
-        script = parse_response(raw, topic, format_id, news_context)
+        script = parse_response(last_raw, topic, format_id, news_context)
 
         log.info(
             f"Script parsed — title: '{script.title}' | "
