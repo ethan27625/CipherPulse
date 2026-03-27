@@ -174,39 +174,62 @@ CATEGORY_SYNONYMS: dict[str, list[str]] = {
         "data encryption security",
     ],
     "dark-tech": [
-        "technology dark background abstract",
-        "digital security cyber",
-        "cyber technology network dark",
-        "cybersecurity abstract blue",
-        "technology circuit glow",
+        "hacker typing terminal dark",
+        "cybersecurity dark abstract",
+        "server room dark blue",
+        "code screen dark terminal",
+        "network security dark",
     ],
 }
 
+# ── Guaranteed-dark first-clip pool ────────────────────────────────────────────
+# The opening frame determines whether viewers stay or swipe.
+# These 3 terms ALWAYS produce dark, techy-looking clips on Pexels.
+# One is chosen at random and fetched as clip #1 before Phase 1 runs.
+DARK_CYBER_FIRST_CLIP_POOL: list[str] = [
+    "hacker dark room",
+    "code on computer screen dark",
+    "server room dark",
+]
+
+# ── Dark/cyber footage pool ─────────────────────────────────────────────────────
+# Used for Phase 2 synonyms (dark-tech category) and Phase 3 generic fallbacks.
+# EVERY term explicitly references dark/cyber — never generic office or lifestyle.
+DARK_CYBER_POOL: list[str] = [
+    "hacker dark room",
+    "cybersecurity dark",
+    "code on computer screen dark",
+    "server room dark",
+    "typing keyboard dark room",
+    "computer hacking dark",
+    "digital data dark",
+    "network security dark",
+    "programming dark screen",
+    "hooded hacker computer",
+]
+
 # ── Generic fallback search terms (Phase 3) ────────────────────────────────────
-# When Phases 1+2 still haven't reached TARGET_CLIPS_PER_VIDEO, these generic
-# dark/tech aesthetic terms are searched in order until the target is met.
-GENERIC_CLIP_TERMS: list[str] = [
-    "technology dark background",
-    "data center server room",
-    "network cables hardware",
-    "circuit board closeup",
-    "binary code screen",
-    "cybersecurity abstract dark",
-    "digital network connection",
-    "server room blue light",
-    "hacker dark room typing",
-    "surveillance camera street",
-    "encrypted data abstract",
-    "computer screen glow dark",
+# When Phases 1+2 still haven't reached TARGET_CLIPS_PER_VIDEO, these dark/cyber
+# terms are searched in order until the target is met.
+# All terms guaranteed to return dark-aesthetic cybersecurity footage.
+GENERIC_CLIP_TERMS: list[str] = DARK_CYBER_POOL + [
+    "data center server room dark",
+    "cyber attack visualization dark",
+    "dark web screen glow",
+    "binary code dark screen",
+    "cybersecurity abstract dark blue",
+    "malware code dark terminal",
+    "encrypted data network dark",
+    "hacker typing terminal dark",
 ]
 
 # Search queries to use when seeding the fallback category cache
 FALLBACK_SEARCH_TERMS = [
     "cybersecurity abstract dark",
-    "digital data stream dark",
-    "technology background dark blue",
-    "circuit board close up",
-    "abstract digital technology",
+    "hacker dark room typing",
+    "server room dark blue",
+    "code terminal dark screen",
+    "network security dark abstract",
 ]
 
 
@@ -586,11 +609,17 @@ def fetch_clip_for_tag(
 def fetch_clips_for_script(
     visual_tags: list[str],
     target_clips: int = TARGET_CLIPS_PER_VIDEO,
+    guaranteed_dark_first: bool = True,
 ) -> list[Path]:
     """
     Fetch enough unique video clips to fill an entire video with no repetition.
 
-    Uses a 3-phase strategy to reach target_clips unique clips:
+    Uses a 4-phase strategy to reach target_clips unique clips:
+
+    Phase 0 — Guaranteed dark opener (when guaranteed_dark_first=True):
+        Fetches clip #1 from DARK_CYBER_FIRST_CLIP_POOL (randomly chosen).
+        Ensures the opening frame always looks dark and cybersecurity-themed
+        regardless of what topic-specific tags the script generated.
 
     Phase 1 — Primary tags:
         One clip per [VISUAL] tag from the script. Each clip is guaranteed
@@ -601,19 +630,22 @@ def fetch_clips_for_script(
         find additional unique clips. Stops as soon as target_clips is reached.
 
     Phase 3 — Generic fallbacks:
-        Searches GENERIC_CLIP_TERMS (dark/tech aesthetics) to fill any
+        Searches GENERIC_CLIP_TERMS (all dark/cyber themed) to fill any
         remaining slots. These are visually consistent with the brand even
         when the topic-specific searches ran dry.
 
     Args:
-        visual_tags:  List of tag strings from Script.visual_tags
-        target_clips: How many unique clips to collect (default TARGET_CLIPS_PER_VIDEO)
+        visual_tags:           List of tag strings from Script.visual_tags
+        target_clips:          How many unique clips to collect (default TARGET_CLIPS_PER_VIDEO)
+        guaranteed_dark_first: If True (default), fetch clip #1 from
+                               DARK_CYBER_FIRST_CLIP_POOL before all other phases.
 
     Returns:
         List of unique local MP4 paths. Length is min(target_clips, available_clips).
         Every path in the list is a DIFFERENT Pexels clip — safe to display
         sequentially with no visual repetition within the video.
     """
+    import random as _rnd
     seen_ids: set[int] = set()
     clip_paths: list[Path] = []
 
@@ -633,6 +665,14 @@ def fetch_clips_for_script(
             seen_ids.add(pid)
         clip_paths.append(path)
         return True
+
+    # ── Phase 0: Guaranteed dark/cyber opening clip ────────────────────────────
+    # Fetch the first clip from the dark pool so the video ALWAYS opens with
+    # a dark cybersecurity aesthetic regardless of the script's visual tags.
+    if guaranteed_dark_first and target_clips > 0:
+        opener_tag = _rnd.choice(DARK_CYBER_FIRST_CLIP_POOL)
+        log.info(f"Phase 0 — guaranteed dark opener: '{opener_tag}'")
+        _try_fetch(opener_tag)
 
     # ── Phase 1: One clip per visual tag from the script ───────────────────────
     log.info(f"Phase 1 — primary tags: fetching clips for {len(visual_tags)} visual tag(s)")

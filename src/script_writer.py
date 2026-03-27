@@ -52,8 +52,8 @@ MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1024
 WORDS_PER_MINUTE = 110      # Calibrated to AndrewMultilingualNeural at rate=-5%
                             # (measured 110-132 wpm in practice — use 110 for conservative estimate)
-MAX_DURATION_SECONDS = 58   # Hard ceiling — YouTube Shorts cap
-MIN_DURATION_SECONDS = 42   # Too short feels rushed
+MAX_DURATION_SECONDS = 45   # News target ceiling — keeps videos punchy and under 45s
+MIN_DURATION_SECONDS = 30   # Floor — below this feels too rushed for news content
 MAX_SCRIPT_RETRIES = 2      # Times to re-prompt if duration is out of range
 
 # Edu mode duration limits — shorter videos (60-80 words ≈ 33-44s at 110 wpm)
@@ -88,10 +88,10 @@ CHANNEL IDENTITY
 - Every sentence must be understandable by a curious 20-year-old with no tech background
 
 WORD COUNT LIMIT (enforce strictly)
-Total script word count: 80-100 words MAXIMUM.
+Total script word count: 70-80 words MAXIMUM.
 This is non-negotiable. The voice is read at ~110 words/minute.
-80 words = ~44 seconds. 100 words = ~55 seconds. Stay in this range.
-Count your words before submitting. If you exceed 120 words, cut ruthlessly.
+70 words = ~38 seconds. 80 words = ~44 seconds. Stay in this range.
+Count your words before submitting. If you exceed 85 words, cut ruthlessly.
 
 SCRIPT STRUCTURE (strictly follow this)
 1. HOOK (2-3 seconds, ~8-10 words): An arresting opening line that stops the scroll.
@@ -104,7 +104,7 @@ SCRIPT STRUCTURE (strictly follow this)
    ❌ WEAK: "Cybersecurity experts are warning about a dangerous new threat."
    The hook must be a statement or question — never start with "Have you ever" or "Did you know".
 
-2. BODY (35-45 seconds, ~60-78 words): Short punchy sentences. No jargon unless
+2. BODY (25-35 seconds, ~45-60 words): Short punchy sentences. No jargon unless
    immediately explained in plain language. Each sentence moves the story forward.
    No filler, no padding. Use specific facts (company names, dollar amounts, dates).
    For technical concepts, use a one-sentence analogy before explaining the mechanism.

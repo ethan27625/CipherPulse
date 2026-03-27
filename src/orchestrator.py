@@ -13,7 +13,7 @@ Modes:
 Pipeline stages per video:
   1. topic_picker    → pick unused topic from topics.json
   2. news_fetcher    → fetch live cybersecurity headlines (optional context)
-  3. script_writer   → Claude generates 45-58s script
+  3. script_writer   → Claude generates 30-45s script
   4. voice_generator → edge-TTS → MP3 + SRT
   5. footage_downloader → Pexels clips for each visual tag
   6. video_assembler → FFmpeg → 1080×1920 MP4
@@ -140,7 +140,12 @@ def run_pipeline(
                 topic=_raw_edu.title,
                 format=4,   # "How It Works" — closest to edu explainer style
             )
-            edu_search_terms = _raw_edu.search_terms[:3]
+            # Append "dark" to each curriculum search term so Pexels returns
+            # dark-aesthetic clips instead of generic bright stock footage.
+            edu_search_terms = [
+                f"{t} dark" if not t.lower().endswith("dark") else t
+                for t in _raw_edu.search_terms[:3]
+            ]
             record["topic"] = {
                 "id": topic.id,
                 "topic": topic.topic,
@@ -242,7 +247,7 @@ def run_pipeline(
                         f"target is ≤35s (consider tighter script next time)"
                     )
             else:
-                MAX_VOICEOVER_SECONDS = 58
+                MAX_VOICEOVER_SECONDS = 50
                 if voice.duration_seconds > MAX_VOICEOVER_SECONDS:
                     raise RuntimeError(
                         f"Voiceover is {voice.duration_seconds:.1f}s — exceeds "
