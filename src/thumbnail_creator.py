@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import logging
 import re
+import subprocess
+import tempfile
 import urllib.request
 from pathlib import Path
 from typing import Optional
@@ -320,6 +322,164 @@ def _make_accent_label(topic: str, format_id: int) -> str:
     return labels.get(format_id, "CIPHERPULSE")
 
 
+def _extract_video_frame(video_path: Path, time_s: float = 2.5) -> Optional[Image.Image]:
+    """
+    Extract a single frame from a video file at time_s using FFmpeg.
+
+    The frame is returned as a PIL Image cropped and scaled to 1280×720.
+    The video is 1080×1920 (portrait 9:16); we scale to 1280 wide and
+    center-crop the height to 720, giving a landscape 16:9 thumbnail from
+    the middle of the frame where the main footage content sits.
+
+    Returns None if extraction fails (caller will fall back to solid background).
+    """
+    tmp_path = Path(tempfile.mktemp(suffix=".jpg"))
+    try:
+        # Scale portrait frame to 1280 wide, then center-crop to 720 tall
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-ss", str(time_s),
+                "-i", str(video_path),
+                "-vframes", "1",
+                "-vf", f"scale=1280:-1,crop=1280:720:0:(ih-720)/2",
+                "-q:v", "2",
+                str(tmp_path),
+            ],
+            capture_output=True,
+            timeout=15,
+        )
+        if result.returncode == 0 and tmp_path.exists() and tmp_path.stat().st_size > 0:
+            img = Image.open(tmp_path).convert("RGB")
+            img.load()  # force-load before temp file is deleted
+            return img
+        log.warning(f"FFmpeg frame extraction failed (rc={result.returncode})")
+    except Exception as e:
+        log.warning(f"Frame extraction error: {e}")
+    finally:
+        tmp_path.unlink(missing_ok=True)
+    return None
+
+
+def _wrap_hook_lines(
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    max_width: int,
+) -> list[str]:
+    """
+    Word-wrap hook text to fit within max_width pixels using Pillow font metrics.
+
+    Returns a list of line strings, each guaranteed to render within max_width.
+    """
+    words = text.split()
+    lines: list[str] = []
+    current: list[str] = []
+    for word in words:
+        test_line = " ".join(current + [word])
+        bbox = font.getbbox(test_line)
+        if current and (bbox[2] - bbox[0]) > max_width:
+            lines.append(" ".join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        lines.append(" ".join(current))
+    return lines
+
+
+# ── Frame-based thumbnail builder ────────────────────────────────────────────
+
+def _create_frame_thumbnail(
+    frame: Image.Image,
+    hook_line: str,
+    out_path: Path,
+) -> Path:
+    """
+    Build a thumbnail from a video frame with the hook text overlaid.
+
+    Layout:
+      - Background: extracted video frame (1280×720, landscape crop)
+      - Dark overlay strip behind text for readability (60% opacity)
+      - Hook text: large white BebasNeue, word-wrapped, centered
+      - CIPHERPULSE watermark: bottom-right, 30% opacity
+
+    Args:
+        frame:     PIL Image at 1280×720 (already scaled/cropped)
+        hook_line: Hook sentence to overlay
+        out_path:  File path to save the PNG to
+
+    Returns:
+        out_path after saving
+    """
+    canvas = frame.resize((THUMB_W, THUMB_H), Image.LANCZOS)
+
+    # ── Subtle dark vignette so text pops regardless of footage brightness ──
+    vignette = Image.new("RGBA", (THUMB_W, THUMB_H), (0, 0, 0, 0))
+    vdraw = ImageDraw.Draw(vignette)
+    vdraw.rectangle([(0, 0), (THUMB_W, THUMB_H)], fill=(0, 0, 0, 60))
+    canvas = Image.alpha_composite(canvas.convert("RGBA"), vignette).convert("RGB")
+
+    # ── Measure & wrap hook text ───────────────────────────────────────────
+    HOOK_FONT_SIZE = 110
+    HOOK_MARGIN    = 60   # px left/right margin
+    max_text_w     = THUMB_W - 2 * HOOK_MARGIN
+
+    hook_font = _load_font("BebasNeue-Regular.ttf", HOOK_FONT_SIZE)
+    lines = _wrap_hook_lines(hook_line, hook_font, max_text_w)
+
+    # Measure total text block height
+    line_bboxes = [hook_font.getbbox(line) for line in lines]
+    line_heights = [bb[3] - bb[1] for bb in line_bboxes]
+    LINE_SPACING  = 8
+    block_h = sum(line_heights) + LINE_SPACING * (len(lines) - 1)
+
+    # Center block vertically in the middle half of the frame (y=160..560)
+    BLOCK_CENTER_Y = THUMB_H // 2
+    block_top = BLOCK_CENTER_Y - block_h // 2
+
+    # ── Dark bar behind text ───────────────────────────────────────────────
+    BAR_PAD = 28
+    bar_top    = block_top - BAR_PAD
+    bar_bottom = block_top + block_h + BAR_PAD
+    overlay = Image.new("RGBA", (THUMB_W, THUMB_H), (0, 0, 0, 0))
+    odraw = ImageDraw.Draw(overlay)
+    odraw.rectangle([(0, bar_top), (THUMB_W, bar_bottom)], fill=(0, 0, 0, 165))
+    canvas = Image.alpha_composite(canvas.convert("RGBA"), overlay).convert("RGB")
+
+    # ── Draw hook text lines ───────────────────────────────────────────────
+    draw = ImageDraw.Draw(canvas)
+    y = block_top
+    for line, lh in zip(lines, line_heights):
+        bbox = hook_font.getbbox(line)
+        lw = bbox[2] - bbox[0]
+        x = (THUMB_W - lw) // 2
+        # Shadow
+        draw.text((x + 3, y + 3), line, font=hook_font, fill=(0, 0, 0, 200))
+        # Text
+        draw.text((x, y), line, font=hook_font, fill=COLOR_WHITE)
+        y += lh + LINE_SPACING
+
+    # ── CIPHERPULSE watermark ──────────────────────────────────────────────
+    wm_font = _load_font("Oswald-Variable.ttf", size=28)
+    wm_text = "CIPHERPULSE"
+    wm_bbox = wm_font.getbbox(wm_text)
+    wm_w = wm_bbox[2] - wm_bbox[0]
+    wm_h = wm_bbox[3] - wm_bbox[1]
+    MARGIN = 24
+    wm_overlay = Image.new("RGBA", (THUMB_W, THUMB_H), (0, 0, 0, 0))
+    wm_draw = ImageDraw.Draw(wm_overlay)
+    wm_draw.text(
+        (THUMB_W - wm_w - MARGIN, THUMB_H - wm_h - MARGIN),
+        wm_text, font=wm_font, fill=(232, 230, 227, 77),
+    )
+    canvas = Image.alpha_composite(canvas.convert("RGBA"), wm_overlay).convert("RGB")
+
+    canvas.save(str(out_path), format="PNG", optimize=True)
+    size_kb = out_path.stat().st_size // 1024
+    log.info(f"Thumbnail saved (frame+hook): {out_path} ({THUMB_W}×{THUMB_H}, {size_kb} KB)")
+    return out_path
+
+
 # ── Main thumbnail builder ────────────────────────────────────────────────────
 
 def create_thumbnail(
@@ -327,34 +487,49 @@ def create_thumbnail(
     output_dir: Path,
     accent_label: Optional[str] = None,
     format_id: int = 1,
+    video_path: Optional[Path] = None,
+    hook_line: str = "",
 ) -> Path:
     """
     Generate a CipherPulse branded thumbnail and save it to output_dir.
 
+    When video_path and hook_line are both provided, the thumbnail uses a frame
+    extracted from the video as its background and overlays the hook_line text
+    in large white type — making the thumbnail feel native to the content.
+    Otherwise falls back to the branded void-black + title-text layout.
+
     Args:
-        title:        Video title (from Script.title) — used as main text
+        title:        Video title — used for the text-only fallback layout
         output_dir:   Directory to write thumbnail.png into
-        accent_label: Small top text override. Auto-generated from format_id if None.
+        accent_label: Small top text override (text-only layout only)
         format_id:    Content format ID (1-6) for accent label auto-generation
+        video_path:   Path to the assembled video.mp4 (for frame extraction)
+        hook_line:    Opening hook sentence to overlay on the extracted frame
 
     Returns:
         Path to the saved thumbnail.png file
-
-    Pipeline:
-        1. Ensure fonts are downloaded
-        2. Create 1280×720 canvas filled with Void Black (#060609)
-        3. Draw grid overlay at 2% opacity
-        4. Draw gradient bar at bottom
-        5. Draw accent label (small cyan, top-center)
-        6. Draw main title (two lines: white + cyan, large, centered)
-        7. Draw "CIPHERPULSE" watermark (bottom-right, 30% opacity)
-        8. Save as PNG
     """
     _download_fonts()
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path = output_dir / "thumbnail.png"
+
+    # ── Decide layout: video-frame or branded solid-bg ─────────────────────
+    use_frame_layout = bool(video_path and hook_line.strip())
+    frame_img: Optional[Image.Image] = None
+    if use_frame_layout:
+        frame_img = _extract_video_frame(video_path, time_s=2.5)
+        if frame_img is None:
+            log.warning("Frame extraction failed — falling back to solid-bg layout")
+            use_frame_layout = False
+
+    if use_frame_layout:
+        return _create_frame_thumbnail(
+            frame=frame_img,
+            hook_line=hook_line.strip(),
+            out_path=out_path,
+        )
 
     # ── Layer 1: Background ────────────────────────────────────────────────
     canvas = Image.new("RGB", (THUMB_W, THUMB_H), COLOR_BG)

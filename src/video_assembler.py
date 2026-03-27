@@ -53,7 +53,7 @@ VIDEO_FPS = 30
 VIDEO_CRF = 23          # H.264 quality: 18=near-lossless, 23=great, 28=lower quality
 VIDEO_PRESET = "fast"   # Encoding speed vs. compression: ultrafast→veryslow
 AUDIO_BITRATE = "192k"  # AAC audio bitrate — 192k is transparent for speech+music
-MUSIC_VOLUME = 0.22     # Background music at 22% of voiceover volume
+MUSIC_VOLUME = 0.25     # Background music at 25% under voiceover
 
 MUSIC_DIR = Path(__file__).parent.parent / "assets" / "music"
 FONTS_DIR = Path(__file__).parent.parent / "assets" / "fonts"
@@ -96,44 +96,73 @@ PAN_CENTER_Y = (SCALE_H - VIDEO_HEIGHT) // 2  # 48px — keep crop centered vert
 
 def _pick_music_track() -> Optional[Path]:
     """
-    Randomly select a licensed music track from assets/music/.
+    Randomly select a dark/ambient licensed track from assets/music/.
 
-    Only tracks registered in music_licenses.json are eligible.  Any file
-    present on disk but absent from the registry is skipped and logged as an
-    error — this prevents unverified tracks from creating Content-ID claims.
+    Only tracks registered in music_licenses.json are eligible, AND only tracks
+    whose filename contains one of the dark keywords (dark, ambient, slow,
+    atmospheric, cinematic) are used — never upbeat SoundHelix tracks.
+    Silent anullsrc placeholder files are excluded.
 
-    Returns None if no licensed tracks are available; caller produces voice-only audio.
+    Falls back to a sine-wave drone (generated on first use) if no real dark
+    tracks are found.  Returns None only if drone generation also fails.
     """
     if not MUSIC_DIR.exists():
         return None
 
+    import json as _json
     from src.download_safe_music import verify_track
+
+    DARK_KEYWORDS = {"dark", "ambient", "slow", "atmospheric", "cinematic"}
+
+    registry_path = Path(__file__).parent.parent / "music_licenses.json"
+    silent_files: set[str] = set()
+    if registry_path.exists():
+        try:
+            reg = _json.loads(registry_path.read_text())
+            silent_files = {
+                t["filename"] for t in reg.get("tracks", [])
+                if "anullsrc" in t.get("source_url", "")
+            }
+        except Exception:
+            pass
 
     all_tracks = [
         p for p in MUSIC_DIR.iterdir()
         if p.suffix.lower() in {".mp3", ".wav", ".m4a", ".flac"}
     ]
+    licensed = [p for p in all_tracks if verify_track(p.name)]
+    dark_tracks = [
+        p for p in licensed
+        if any(kw in p.stem.lower() for kw in DARK_KEYWORDS)
+        and p.name not in silent_files
+    ]
 
-    licensed: list[Path] = []
-    for p in all_tracks:
-        if verify_track(p.name):
-            licensed.append(p)
-        else:
-            log.error(
-                f"Rejecting unregistered music file: {p.name} — "
-                "run 'python3 -m src.download_safe_music' to populate the registry"
-            )
+    if dark_tracks:
+        chosen = random.choice(dark_tracks)
+        log.info(f"Background music: {chosen.name}")
+        return chosen
 
-    if not licensed:
-        log.warning(
-            "No licensed tracks in assets/music/ — producing voice-only audio. "
-            "Run: python3 -m src.download_safe_music"
+    log.info("No real dark/ambient tracks — using sine-wave drone fallback")
+
+    drone_path = MUSIC_DIR / "dark_ambient_drone.wav"
+    if not drone_path.exists():
+        log.info("Generating sine-wave drone fallback (80 Hz, lowpass 200 Hz)…")
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=80:duration=60",
+             "-af", "lowpass=f=200,volume=0.3", str(drone_path)],
+            capture_output=True, text=True,
         )
-        return None
+        if r.returncode != 0:
+            log.warning("Drone generation failed — producing voice-only audio")
+            return None
+        log.info(f"Drone saved: {drone_path.name}")
 
-    chosen = random.choice(licensed)
-    log.info(f"Background music: {chosen.name}")
-    return chosen
+    if drone_path.exists():
+        log.info(f"Background music: {drone_path.name} (generated fallback)")
+        return drone_path
+
+    log.warning("No dark/ambient tracks available — producing voice-only audio")
+    return None
 
 
 def _get_video_duration(path: Path) -> float:
@@ -189,6 +218,8 @@ def _escape_filter_path(path: Path) -> str:
     return s
 
 
+
+
 # ── Filter graph builder ───────────────────────────────────────────────────────
 
 def _build_filter_complex(
@@ -197,16 +228,18 @@ def _build_filter_complex(
     subtitle_path: Path,
     voice_index: int,
     music_index: Optional[int],
+    voice_duration: float = 0.0,
 ) -> tuple[str, str, str]:
     """
     Build the FFmpeg -filter_complex string for the full pipeline.
 
     Args:
-        n_clips:       Number of video clip inputs (indices 0..n_clips-1)
-        seg_duration:  Duration in seconds each clip should fill
-        subtitle_path: Path to the ASS subtitle file (karaoke style)
-        voice_index:   FFmpeg input index for the voiceover MP3
-        music_index:   FFmpeg input index for the music track (None if no music)
+        n_clips:        Number of video clip inputs (indices 0..n_clips-1)
+        seg_duration:   Duration in seconds each clip should fill
+        subtitle_path:  Path to the ASS subtitle file (karaoke style)
+        voice_index:    FFmpeg input index for the voiceover MP3
+        music_index:    FFmpeg input index for the music track (None if no music)
+        voice_duration: Total voiceover duration (s) — used to time the CTA overlay
 
     Returns:
         Tuple of (filter_complex_string, video_map_label, audio_map_label)
@@ -224,7 +257,7 @@ def _build_filter_complex(
     pan right→left. When the same source clip appears twice due to cycling, the
     reversed direction makes it read as different footage.
 
-    Then: concat → subtitles (ASS karaoke, lower third) → [vout]
+    Then: concat → subtitles (ASS karaoke) → drawtext overlays → [vout]
     """
     parts: list[str] = []
     seg = f"{seg_duration:.3f}"
@@ -277,18 +310,53 @@ def _build_filter_complex(
     sub_escaped   = _escape_filter_path(subtitle_path)
     fonts_escaped = _escape_filter_path(FONTS_DIR)
     parts.append(
-        f"[vcat]subtitles='{sub_escaped}':fontsdir='{fonts_escaped}'[vout]"
+        f"[vcat]subtitles='{sub_escaped}':fontsdir='{fonts_escaped}'[vsub]"
     )
+
+    # ── Text overlays via drawtext ─────────────────────────────────────────
+    # Two overlays chained after subtitles:
+    #   1. CP watermark — always shown, top-left, 50% opacity
+    #   2. CTA footer   — last 3 s, bottom 10%, light-gray centered text
+    bebas_path  = FONTS_DIR / "BebasNeue-Regular.ttf"
+    oswald_path = FONTS_DIR / "Oswald-Variable.ttf"
+    if bebas_path.exists():
+        ov_font: Optional[str] = _escape_filter_path(bebas_path)
+    elif oswald_path.exists():
+        ov_font = _escape_filter_path(oswald_path)
+    else:
+        ov_font = None
+
+    def _dt_font(f: Optional[str]) -> str:
+        return f"fontfile='{f}':" if f else ""
+
+    dt_parts: list[str] = []
+
+    # CP watermark — permanent, top-left
+    dt_parts.append(
+        f"drawtext={_dt_font(ov_font)}"
+        f"text='CP':"
+        f"fontsize=20:"
+        f"fontcolor=white@0.50:"
+        f"x=20:y=20"
+    )
+
+    # CTA — shown for the last 3 s, centered, bottom 10%
+    cta_start = max(0.0, voice_duration - 3.0)
+    dt_parts.append(
+        f"drawtext={_dt_font(ov_font)}"
+        f"text='Follow @CipherPulse':"
+        f"fontsize=28:"
+        f"fontcolor=0xB4B4B4@0.85:"
+        f"x=(w-text_w)/2:y=h*0.90:"
+        f"enable='gte(t,{cta_start:.3f})'"
+    )
+
+    parts.append(f"[vsub]{','.join(dt_parts)}[vout]")
 
     # ── Stage 5: Audio mixing ──────────────────────────────────────────────
     if music_index is not None:
         # aloop=loop=-1:size=2147483647 → loop music indefinitely
-        #   loop=-1 means infinite loops
-        #   size=2147483647 is INT_MAX frames — effectively unlimited loop buffer
-        # volume=MUSIC_VOLUME → reduce music to 17% of its original level
-        # amix=inputs=2:duration=first → mix voice + music, stop when voice ends
-        #   duration=first means the output length = length of the first input
-        #   (we always put voiceover first, so music is cut off when voice ends)
+        # amix=duration=first → output length = voiceover length
         parts.append(
             f"[{voice_index}:a]volume=1.0[voice_full];"
             f"[{music_index}:a]aloop=loop=-1:size=2147483647[music_looped];"
@@ -297,7 +365,6 @@ def _build_filter_complex(
         )
         audio_map = "[aout]"
     else:
-        # No music — pass voiceover through as-is
         parts.append(f"[{voice_index}:a]volume=1.0[aout]")
         audio_map = "[aout]"
 
@@ -406,9 +473,7 @@ def assemble_video(
 
     # ── Distribute clips evenly across the voiceover ───────────────────────
     # footage_downloader guarantees every clip is unique — use them all once.
-    # Each clip gets an equal share of the total duration.
-    # (voice_duration + 0.5) adds a 0.5s buffer so the last clip doesn't
-    # cut off a syllable right at the tail of the audio.
+    # +0.5 s buffer prevents the last clip cutting off right at audio tail.
     n_clips = len(clip_paths)
     seg_duration = (voice_duration + 0.5) / n_clips
     log.info(f"Using {n_clips} unique clips — {seg_duration:.2f}s each")
@@ -441,9 +506,10 @@ def assemble_video(
     filter_complex, video_map, audio_map = _build_filter_complex(
         n_clips=n_clips,
         seg_duration=seg_duration,
-        subtitle_path=srt_path,   # srt_path is now the .ass file
+        subtitle_path=srt_path,
         voice_index=voice_index,
         music_index=music_index,
+        voice_duration=voice_duration,
     )
 
     # ── Add filter_complex and output options ──────────────────────────────

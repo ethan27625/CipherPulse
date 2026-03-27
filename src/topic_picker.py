@@ -24,7 +24,7 @@ TOPICS_PATH = Path("topics.json")
 # 30% of picks are overridden to format 7 (Text Card) for content variety.
 # This mixes quick text card Shorts with the standard voiceover Shorts
 # without needing separate format-7 entries in topics.json.
-TEXT_CARD_PROBABILITY = 1.00  # set to 0.30 to resume mixed mode
+TEXT_CARD_PROBABILITY = 0.0   # 0.0 = always use footage+voiceover format; 1.0 = always text card
 
 # High-search-volume cybersecurity keywords that boost a topic's selection
 # weight during random_pick mode.  Topics containing any of these terms are

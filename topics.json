@@ -318,120 +318,120 @@
     "id": 46,
     "topic": "The 2020 US Election Infrastructure Attacks: What Really Happened",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-24"
   },
   {
     "id": 47,
     "topic": "JBS Meatpacking Ransomware: How Hackers Disrupted the US Food Supply",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-25"
   },
   {
     "id": 48,
     "topic": "CNA Financial: $40M Ransom Paid to Ransomware Gang \u2014 Largest Known Payment",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-26"
   },
   {
     "id": 49,
     "topic": "The SolarWinds Hack Timeline: 9 Months Undetected in 18,000 Networks",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-26"
   },
   {
     "id": 50,
     "topic": "Lapsus$: The Teenage Hacking Gang That Breached Microsoft, Nvidia, and Samsung",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-26"
   },
   {
     "id": 51,
     "topic": "How Hackers Took Down Dyn DNS and Killed Twitter, Netflix, and Reddit for a Day",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-26"
   },
   {
     "id": 52,
     "topic": "The Water Treatment Plant Hack: Hacker Tried to Poison Oldsmar, Florida's Water",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 53,
     "topic": "Hafnium: China Exploited Microsoft Exchange to Hack 250,000 Servers in 30 Days",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 54,
     "topic": "The Medibank Breach: Australia's Largest Health Insurer Exposed 9.7M Patient Records",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 55,
     "topic": "Reddit Phishing Attack 2023: Two-Factor Wasn't Enough",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 56,
     "topic": "The Okta Breach: A Support Ticket Gave Hackers Access to 134 Customer Environments",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 57,
     "topic": "ALPHV BlackCat Ransomware: The FBI Disrupted Them \u2014 Then They Came Back",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 58,
     "topic": "Cl0p Ransomware: How One Gang Exploited GoAnywhere, MOVEit, and More in One Year",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 59,
     "topic": "The Air India Breach: 4.5 Million Passenger Records Including Passport Data Stolen",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 60,
     "topic": "Robinhood 2021: 5 Million Emails Stolen via Customer Support Social Engineering",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 61,
     "topic": "The Worm That Ate Iran: Stuxnet's Full Story from Discovery to Attribution",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 62,
     "topic": "Hackers Shut Down a US Hospital \u2014 and a Patient Died",
     "format": 1,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-03-27"
   },
   {
     "id": 63,

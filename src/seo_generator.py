@@ -154,6 +154,75 @@ Validate before responding:
 """
 
 
+# ── Edu mode SEO prompt ────────────────────────────────────────────────────────
+# Used when mode="edu". Optimises for educational discovery keywords rather than
+# breaking-news / incident keywords.
+
+EDU_SEO_SYSTEM_PROMPT = """\
+You are the SEO and social media manager for CipherPulse Edu, a free tech education
+channel teaching cybersecurity, Linux, networking, AI, and CS fundamentals to beginners.
+
+Your job is to write discovery-optimised metadata for SHORT educational explainer videos
+(~30-45 seconds). This is NOT news — it is beginner education content.
+
+PLATFORM REQUIREMENTS
+
+YouTube:
+- title: Under 50 characters. Search-optimised, curiosity-driven.
+  Format: "What is [topic]? Explained simply" / "[Topic] in 30 seconds" /
+          "How [topic] works (beginner)" / "[Tool] explained for beginners"
+  Generate THREE title_candidates. Pick the most searchable as "title".
+  Prioritise long-tail search terms beginners actually type.
+- description:
+  Line 1: "Learn [topic] in under 60 seconds — no experience needed."
+  Line 2: One sentence on why this topic matters for cybersecurity/AI/tech careers
+           (weave in SEO keywords naturally: e.g. "linux command line", "kali tools",
+           "network protocols", "ethical hacking basics").
+  Line 3: One practical tip or next step for learners.
+  Line 4: (blank)
+  Line 5: "Follow @CipherPulse — free cyber & AI education every day."
+  Line 6: (blank)
+  Line 7: 8-10 hashtags on ONE line. Always include #cybersecurity #learnhacking
+           #techeducation #shorts #cipherpulse plus 3-5 topic-specific tags.
+- tags: 8-10 keyword tags. Mix broad (cybersecurity, linux, networking) and specific
+  (dns explained, ssh tutorial, kali linux beginner). Lowercase. Return as JSON array.
+
+TikTok:
+- caption: Under 150 characters. Conversational, educational tone.
+  Must include #fyp and #learnontiktok.
+  Example: "DNS is basically the internet's phone book 📱 here's how it works #fyp #learnontiktok #tech"
+
+Instagram:
+- caption: Hook sentence (compelling first 125 chars). Then 1-2 educational sentences.
+  Blank line. Then exactly 30 hashtags one per line.
+  Include: #cybersecurity #coding #linux #hacking #techeducation #learnhacking
+  #ethicalhacking #infosec #computerscience #programming #kalilinux #networking
+  #cybersecuritytips #techstudent #hackthebox #cipherpulse #shorts #learntocode
+  plus 12 more topic-specific/niche tags relevant to the lesson.
+
+OUTPUT FORMAT
+Respond with ONLY a JSON code block — no prose:
+
+```json
+{
+  "youtube": {
+    "title": "best option ≤50 chars",
+    "title_candidates": ["option 1", "option 2", "option 3"],
+    "description": "...",
+    "tags": ["tag1", "tag2"]
+  },
+  "tiktok": {"caption": "..."},
+  "instagram": {"caption": "..."}
+}
+```
+
+Validate before responding:
+- YouTube title ≤ 50 characters
+- TikTok caption ≤ 150 characters
+- Instagram caption has exactly 30 hashtags
+"""
+
+
 # ── Data structures ────────────────────────────────────────────────────────────
 
 @dataclass
@@ -363,12 +432,16 @@ def _parse_response(
     stop=stop_after_attempt(3),
     reraise=True,
 )
-def _call_claude(client: anthropic.Anthropic, user_message: str) -> str:
+def _call_claude(
+    client: anthropic.Anthropic,
+    user_message: str,
+    system_prompt: str = SEO_SYSTEM_PROMPT,
+) -> str:
     """Call Claude and return raw text response, with exponential backoff retry."""
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=SEO_SYSTEM_PROMPT,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
     )
     return response.content[0].text
@@ -383,17 +456,19 @@ def generate_metadata(
     video_title: str,
     output_dir: Optional[Path] = None,
     api_key: Optional[str] = None,
+    mode: str = "news",
 ) -> VideoMetadata:
     """
     Generate platform-specific SEO metadata for a CipherPulse video.
 
     Args:
-        topic:       Topic string from topics.json (e.g. "Pegasus spyware targeting journalists")
+        topic:       Topic string (from topics.json or edu curriculum title)
         format_id:   Content format ID 1-6
         script_text: The speakable script text (Script.full_text, no [VISUAL] tags)
         video_title: The video title from Script.title — used as YouTube title seed
         output_dir:  If provided, saves metadata.json here automatically
         api_key:     Optional ANTHROPIC_API_KEY override (reads from .env by default)
+        mode:        "news" (default) or "edu". Selects the SEO prompt template.
 
     Returns:
         VideoMetadata dataclass with all platform fields populated.
@@ -409,6 +484,9 @@ def generate_metadata(
 
     client = anthropic.Anthropic(api_key=resolved_key)
     format_name = FORMAT_NAMES.get(format_id, "Unknown")
+
+    # Select system prompt based on mode
+    sys_prompt = EDU_SEO_SYSTEM_PROMPT if mode == "edu" else SEO_SYSTEM_PROMPT
 
     user_message = f"""\
 Generate platform-optimised SEO metadata for this CipherPulse video.
@@ -427,7 +505,7 @@ Return only the JSON block, nothing else.
     log.info(f"Generating SEO metadata for: {topic[:60]}")
 
     try:
-        raw = _call_claude(client, user_message)
+        raw = _call_claude(client, user_message, system_prompt=sys_prompt)
     except Exception as e:
         log.error(f"SEO API call failed: {e}")
         raise RuntimeError(f"SEO generation failed: {e}") from e

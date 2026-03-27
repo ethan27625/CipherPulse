@@ -50,11 +50,15 @@ log = logging.getLogger("script_writer")
 # ── Constants ─────────────────────────────────────────────────────────────────
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1024
-WORDS_PER_MINUTE = 100      # Conservative floor calibrated from GuyNeural at rate=-8%
-                            # (3 samples: 128/117/105 wpm — floor 105, use 100 for safety margin)
+WORDS_PER_MINUTE = 110      # Calibrated to AndrewMultilingualNeural at rate=-5%
+                            # (measured 110-132 wpm in practice — use 110 for conservative estimate)
 MAX_DURATION_SECONDS = 58   # Hard ceiling — YouTube Shorts cap
 MIN_DURATION_SECONDS = 42   # Too short feels rushed
 MAX_SCRIPT_RETRIES = 2      # Times to re-prompt if duration is out of range
+
+# Edu mode duration limits — shorter videos (60-80 words ≈ 33-44s at 110 wpm)
+EDU_MAX_DURATION_SECONDS = 44   # ~80 words at 110 wpm
+EDU_MIN_DURATION_SECONDS = 15   # Floor to catch pathologically short outputs
 
 # Format names for prompt context (matches topics.json format IDs)
 FORMAT_NAMES: dict[int, str] = {
@@ -84,10 +88,10 @@ CHANNEL IDENTITY
 - Every sentence must be understandable by a curious 20-year-old with no tech background
 
 WORD COUNT LIMIT (enforce strictly)
-Total script word count: 80-95 words MAXIMUM.
-This is non-negotiable. The voice is read at ~105 words/minute with pauses.
-80 words = ~46 seconds. 95 words = ~54 seconds. Stay in this range.
-Count your words before submitting. If you exceed 95 words, cut ruthlessly.
+Total script word count: 80-100 words MAXIMUM.
+This is non-negotiable. The voice is read at ~110 words/minute.
+80 words = ~44 seconds. 100 words = ~55 seconds. Stay in this range.
+Count your words before submitting. If you exceed 120 words, cut ruthlessly.
 
 SCRIPT STRUCTURE (strictly follow this)
 1. HOOK (2-3 seconds, ~8-10 words): An arresting opening line that stops the scroll.
@@ -154,6 +158,76 @@ CONTENT PROHIBITIONS
 - Never use fear-mongering or exaggerated claims beyond documented facts
 - Never recommend illegal activities
 - Keep all language appropriate for a general audience (no graphic details of violence)
+"""
+
+# ── Edu mode system prompt ─────────────────────────────────────────────────────
+# Used when --mode edu is passed to the orchestrator. Produces short beginner-friendly
+# explainer scripts (~60-80 words) aimed at CS students with zero background.
+
+EDU_SYSTEM_PROMPT = """\
+You are the scriptwriter for CipherPulse Edu, a free tech education channel for beginners.
+Your job is to write punchy, approachable 30-40 second explainer scripts for YouTube Shorts.
+
+AUDIENCE
+- First-semester CS students or curious people with ZERO prior technical background
+- Write like a knowledgeable friend explaining to you over lunch — NOT a textbook
+- Use real-world analogies to make abstract concepts click instantly
+
+WORD COUNT LIMIT (CRITICAL — enforced strictly)
+Total word count: 60-80 words MAXIMUM. Count before you submit. Cut ruthlessly if over.
+At ~110 words/minute: 60 words = 33 seconds. 80 words = 44 seconds.
+Every word must earn its place. No filler, no preamble, no "In this video..."
+
+SCRIPT STRUCTURE
+
+1. HOOK (1-2 sentences, 10-15 words):
+   A relatable question, surprising fact, or direct statement that earns attention.
+   ✅ "Every website you visit has an invisible address — you just never see it."
+   ✅ "Your terminal is the most powerful tool on your computer. Here's why."
+   ✅ "Linux powers 96% of the world's web servers. It's also completely free."
+   ❌ "Today we're going to learn about IP addresses."
+   ❌ "Have you ever wondered how the internet works?"
+
+2. EXPLANATION (35-50 words): What it is + why it matters + one concrete analogy.
+   - Lead with the analogy FIRST, then the technical concept.
+   - Keep it to ONE concept per video. No tangents.
+   - Example: "Think of an IP address like a postal address — every device on a
+     network gets a unique one so data knows where to go."
+
+3. ACTIONABLE TAKEAWAY (1 sentence, 8-12 words):
+   Something concrete they can do, try, or look up right now.
+   ✅ "Open your terminal and type 'ip addr' to see your own IP address."
+   ✅ "Search 'Kali Linux beginner VM' and set it up this weekend."
+   ✅ "Run 'ls -la' in any folder to see hidden files and permissions."
+
+FACTUAL ACCURACY RULES (non-negotiable)
+- Stick to textbook-level, well-established facts. No speculation.
+- Do not exaggerate capabilities of tools or techniques.
+- If simplifying a nuanced concept, simplify it accurately — not incorrectly.
+- Use correct tool names, command syntax, and terminology.
+
+TONE RULES
+- Conversational and engaging — like a cool senior student, not a lecturer
+- Never say "In conclusion", "Today we learned", or "Don't forget to like"
+- No drama, no fear-mongering — this is education, not a news channel
+- Jargon is OK only if you immediately explain it in plain language
+- Short punchy sentences. If a sentence exceeds 15 words, split it.
+
+VISUAL TAGS
+Insert 4-5 [VISUAL: keyword] tags throughout. Match the content being explained.
+If explaining a terminal command, show terminal footage. If explaining networking,
+show network/server footage.
+
+OUTPUT FORMAT
+Respond with ONLY this block — no preamble, no explanation:
+
+TITLE: <curiosity-driven title ≤50 chars, e.g. "What is SSH? Explained simply">
+HOOK: <the opening 1-2 sentence hook line>
+---
+<full script with [VISUAL: ...] tags embedded inline>
+---
+VISUAL_TAGS: <comma-separated tag phrases from your [VISUAL:] tags>
+EST_WORDS: <integer word count of the full script>
 """
 
 
@@ -374,18 +448,13 @@ def estimate_duration(text: str) -> tuple[int, float]:
 
     Strips [VISUAL: ...] tags (they aren't spoken), counts words, divides by
     WORDS_PER_MINUTE. Returns (word_count, duration_in_seconds).
-
-    Real-world note: Edge-TTS at rate=-8% is slightly slower than the average
-    speaker, so we use 145 wpm instead of 150 for a conservative estimate.
     """
     # Remove [VISUAL: ...] tags — they don't get spoken
     clean = re.sub(r"\[VISUAL:[^\]]+\]", "", text)
     # Collapse whitespace
     clean = re.sub(r"\s+", " ", clean).strip()
     words = len(clean.split())
-    # 100 wpm — conservative floor from 3 GuyNeural samples (105/117/128 wpm observed)
-    # Erring slow avoids the orchestrator having to retry for over-length audio.
-    duration = (words / 100) * 60
+    duration = (words / WORDS_PER_MINUTE) * 60
     return words, duration
 
 
@@ -459,23 +528,27 @@ def parse_response(raw: str, topic: str, format_id: int,
     stop=stop_after_attempt(3),
     reraise=True,
 )
-def _call_claude(client: anthropic.Anthropic, user_message: str) -> str:
+def _call_claude(
+    client: anthropic.Anthropic,
+    user_message: str,
+    system_prompt: str = SYSTEM_PROMPT,
+) -> str:
     """
     Send a message to Claude and return the raw text response.
 
-    The @retry decorator from tenacity handles:
-    - RateLimitError (429): wait 4s, 8s, 16s between retries
-    - APIStatusError (5xx server errors): same backoff
-    - Gives up after 3 attempts and re-raises the exception
+    Args:
+        client:        Anthropic client instance
+        user_message:  The user-turn message (topic + any retry instructions)
+        system_prompt: System prompt to use — defaults to the news SYSTEM_PROMPT;
+                       pass EDU_SYSTEM_PROMPT for edu mode
 
-    Exponential backoff explanation: instead of retrying immediately (which
-    hammers a rate-limited API), we wait progressively longer — 4s, then 8s,
-    then 16s. This is standard practice for any networked API call.
+    The @retry decorator handles RateLimitError / APIStatusError with exponential
+    backoff (4s → 8s → 16s), giving up after 3 total attempts.
     """
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
     )
     return response.content[0].text
@@ -488,17 +561,19 @@ def generate_script(
     format_id: int = 1,
     news_context: Optional[str] = None,
     api_key: Optional[str] = None,
+    mode: str = "news",
 ) -> Script:
     """
     Generate a CipherPulse video script for the given topic.
 
     Args:
-        topic:        The video topic string (from topics.json or a live news headline)
+        topic:        The video topic string (from topics.json or edu curriculum title)
         format_id:    Content format 1-6 (matches FORMAT_NAMES dict)
-        news_context: For format-6 only — the formatted string from
-                      Headline.to_prompt_context() (source + headline + summary).
-                      Never used to copy text; only grounds Claude in public facts.
-        api_key:      Override for ANTHROPIC_API_KEY env var (optional, for testing)
+        news_context: For format-6 only — formatted headline string from news_fetcher.
+                      Never used in edu mode.
+        api_key:      Override for ANTHROPIC_API_KEY env var (optional)
+        mode:         "news" (default) or "edu". Selects system prompt and duration limits.
+                      edu scripts target 60-80 words (~33-44s); news targets 80-100 words (~44-55s).
 
     Returns:
         Script dataclass with all parsed fields populated.
@@ -516,11 +591,20 @@ def generate_script(
     client = anthropic.Anthropic(api_key=resolved_key)
     format_name = FORMAT_NAMES.get(format_id, "Incident Breakdown")
 
-    # ── Build the user message ─────────────────────────────────────────────────
-    # The user message tells Claude the specific topic and format.
-    # For News React, we inject the live headline as grounding context.
+    # ── Select system prompt and duration limits based on mode ─────────────────
+    if mode == "edu":
+        sys_prompt = EDU_SYSTEM_PROMPT
+        min_dur    = EDU_MIN_DURATION_SECONDS
+        max_dur    = EDU_MAX_DURATION_SECONDS
+    else:
+        sys_prompt = SYSTEM_PROMPT
+        min_dur    = MIN_DURATION_SECONDS
+        max_dur    = MAX_DURATION_SECONDS
 
-    if news_context and format_id == 6:
+    # ── Build the user message ─────────────────────────────────────────────────
+    if mode == "edu":
+        user_message = f"Write a CipherPulse Edu Short explaining: {topic}"
+    elif news_context and format_id == 6:
         user_message = f"""\
 Write a CipherPulse Short in the "{format_name}" format.
 
@@ -541,31 +625,30 @@ Create an original, engaging script about this topic following all format rules.
 """
 
     # ── Script generation loop with duration validation ────────────────────────
-    # If the estimated duration is outside [MIN, MAX], re-prompt with guidance.
+    # If the estimated duration is outside [min_dur, max_dur], re-prompt.
     # Max 2 correction attempts before accepting whatever we have.
 
     script: Optional[Script] = None
 
     for attempt in range(MAX_SCRIPT_RETRIES + 1):
         if attempt > 0:
-            # Tell Claude exactly how to fix the duration on retry
-            direction = "shorter" if script.est_duration_seconds > MAX_DURATION_SECONDS else "longer"
-            target_words = int(WORDS_PER_MINUTE * MAX_DURATION_SECONDS / 60) - 5
+            direction = "shorter" if script.est_duration_seconds > max_dur else "longer"
+            target_words = int(WORDS_PER_MINUTE * max_dur / 60) - 5
             log.warning(
                 f"Duration {script.est_duration_seconds:.1f}s is out of range "
-                f"[{MIN_DURATION_SECONDS}-{MAX_DURATION_SECONDS}s]. "
+                f"[{min_dur}-{max_dur}s]. "
                 f"Retry {attempt}/{MAX_SCRIPT_RETRIES} — requesting {direction} script."
             )
             user_message += (
                 f"\n\nPREVIOUS ATTEMPT WAS TOO {direction.upper()}. "
                 f"Rewrite the script to be approximately {target_words} words "
-                f"(spoken duration {MIN_DURATION_SECONDS}-{MAX_DURATION_SECONDS} seconds). "
+                f"(spoken duration {min_dur}-{max_dur} seconds). "
                 f"Keep the same topic and structure but adjust the content volume."
             )
 
         log.info(f"Calling Claude (attempt {attempt + 1}) — topic: {topic[:60]}")
         try:
-            raw = _call_claude(client, user_message)
+            raw = _call_claude(client, user_message, system_prompt=sys_prompt)
         except Exception as e:
             log.error(f"Claude API call failed after retries: {e}")
             raise RuntimeError(f"Script generation failed: {e}") from e
@@ -578,7 +661,8 @@ Create an original, engaging script about this topic following all format rules.
             f"{len(script.visual_tags)} visual tags"
         )
 
-        if script.is_valid_duration():
+        in_range = min_dur <= script.est_duration_seconds <= max_dur
+        if in_range:
             log.info("Duration valid — script accepted.")
             break
 

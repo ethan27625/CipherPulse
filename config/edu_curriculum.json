@@ -1,0 +1,839 @@
+{
+  "meta": {
+    "current_category_index": 0,
+    "topics_in_current_batch": 3,
+    "batch_size": 4
+  },
+  "categories": [
+    {
+      "name": "Linux Fundamentals",
+      "topics": [
+        {
+          "id": "linux-001",
+          "title": "What is Linux and why hackers use it",
+          "keywords": [
+            "linux",
+            "operating system",
+            "hacking"
+          ],
+          "search_terms": [
+            "linux terminal dark",
+            "hacker typing terminal",
+            "ubuntu desktop screen"
+          ],
+          "completed": true
+        },
+        {
+          "id": "linux-002",
+          "title": "Basic terminal commands every beginner needs",
+          "keywords": [
+            "terminal",
+            "command line",
+            "bash"
+          ],
+          "search_terms": [
+            "terminal commands typing",
+            "linux command line",
+            "code on screen dark"
+          ],
+          "completed": true
+        },
+        {
+          "id": "linux-003",
+          "title": "Linux file system structure explained",
+          "keywords": [
+            "file system",
+            "directories",
+            "linux"
+          ],
+          "search_terms": [
+            "folder structure screen",
+            "file manager computer",
+            "organizing files digital"
+          ],
+          "completed": true
+        },
+        {
+          "id": "linux-004",
+          "title": "File permissions and why they matter",
+          "keywords": [
+            "chmod",
+            "permissions",
+            "security"
+          ],
+          "search_terms": [
+            "lock security digital",
+            "access denied screen",
+            "cybersecurity lock"
+          ],
+          "completed": false
+        },
+        {
+          "id": "linux-005",
+          "title": "Package managers explained: apt yum snap",
+          "keywords": [
+            "package manager",
+            "apt",
+            "software"
+          ],
+          "search_terms": [
+            "software installation screen",
+            "downloading application",
+            "app store computer"
+          ],
+          "completed": false
+        },
+        {
+          "id": "linux-006",
+          "title": "Shell scripting basics for beginners",
+          "keywords": [
+            "bash",
+            "scripting",
+            "automation"
+          ],
+          "search_terms": [
+            "code editor dark screen",
+            "programming automation",
+            "script running terminal"
+          ],
+          "completed": false
+        },
+        {
+          "id": "linux-007",
+          "title": "SSH and remote connections explained",
+          "keywords": [
+            "ssh",
+            "remote access",
+            "terminal"
+          ],
+          "search_terms": [
+            "remote desktop connection",
+            "server room cables",
+            "connecting computer network"
+          ],
+          "completed": false
+        },
+        {
+          "id": "linux-008",
+          "title": "Linux distros compared: Ubuntu vs Kali vs Parrot",
+          "keywords": [
+            "ubuntu",
+            "kali",
+            "distributions"
+          ],
+          "search_terms": [
+            "multiple computer screens",
+            "operating system desktop",
+            "linux desktop screen"
+          ],
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "Kali Linux",
+      "topics": [
+        {
+          "id": "kali-001",
+          "title": "What is Kali Linux and who uses it",
+          "keywords": [
+            "kali",
+            "penetration testing",
+            "tools"
+          ],
+          "search_terms": [
+            "kali linux screen",
+            "hacker tools dark",
+            "cybersecurity professional"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-002",
+          "title": "Setting up Kali Linux: VM vs bare metal",
+          "keywords": [
+            "virtual machine",
+            "kali",
+            "setup"
+          ],
+          "search_terms": [
+            "virtual machine setup",
+            "computer installation",
+            "operating system install"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-003",
+          "title": "Top 10 Kali tools every beginner should know",
+          "keywords": [
+            "kali tools",
+            "nmap",
+            "wireshark"
+          ],
+          "search_terms": [
+            "hacking tools screen",
+            "cybersecurity software",
+            "network scanning"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-004",
+          "title": "Using Nmap to scan networks",
+          "keywords": [
+            "nmap",
+            "scanning",
+            "reconnaissance"
+          ],
+          "search_terms": [
+            "network scanning screen",
+            "ip addresses screen",
+            "terminal command running"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-005",
+          "title": "Wireshark packet analysis basics",
+          "keywords": [
+            "wireshark",
+            "packets",
+            "network analysis"
+          ],
+          "search_terms": [
+            "network traffic data",
+            "data packets flowing",
+            "network monitoring screen"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-006",
+          "title": "Metasploit framework intro for beginners",
+          "keywords": [
+            "metasploit",
+            "exploitation",
+            "framework"
+          ],
+          "search_terms": [
+            "hacking framework screen",
+            "cybersecurity terminal",
+            "penetration testing dark"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-007",
+          "title": "Burp Suite for web application testing",
+          "keywords": [
+            "burp suite",
+            "web security",
+            "proxy"
+          ],
+          "search_terms": [
+            "web browser security",
+            "website testing screen",
+            "web application code"
+          ],
+          "completed": false
+        },
+        {
+          "id": "kali-008",
+          "title": "Password cracking with John and Hashcat",
+          "keywords": [
+            "password cracking",
+            "hashcat",
+            "john"
+          ],
+          "search_terms": [
+            "password screen lock",
+            "encryption code screen",
+            "brute force typing"
+          ],
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "Networking",
+      "topics": [
+        {
+          "id": "net-001",
+          "title": "What is a network and how the internet works",
+          "keywords": [
+            "network",
+            "internet",
+            "basics"
+          ],
+          "search_terms": [
+            "network cables connected",
+            "internet infrastructure",
+            "data center servers"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-002",
+          "title": "IP addresses and subnets explained simply",
+          "keywords": [
+            "ip address",
+            "subnet",
+            "networking"
+          ],
+          "search_terms": [
+            "ip address screen",
+            "network configuration",
+            "numbers on screen digital"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-003",
+          "title": "TCP vs UDP what is the difference",
+          "keywords": [
+            "tcp",
+            "udp",
+            "protocols"
+          ],
+          "search_terms": [
+            "data transfer network",
+            "sending receiving data",
+            "network speed connection"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-004",
+          "title": "DNS explained: how domain names work",
+          "keywords": [
+            "dns",
+            "domain",
+            "resolution"
+          ],
+          "search_terms": [
+            "web browser address bar",
+            "typing website url",
+            "domain name screen"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-005",
+          "title": "Ports and protocols every hacker should know",
+          "keywords": [
+            "ports",
+            "protocols",
+            "services"
+          ],
+          "search_terms": [
+            "network ports diagram",
+            "server connections",
+            "firewall configuration"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-006",
+          "title": "The OSI model broken down simply",
+          "keywords": [
+            "osi model",
+            "layers",
+            "networking"
+          ],
+          "search_terms": [
+            "network layers diagram",
+            "data flowing network",
+            "technology infrastructure"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-007",
+          "title": "Firewalls and how they protect networks",
+          "keywords": [
+            "firewall",
+            "security",
+            "filtering"
+          ],
+          "search_terms": [
+            "firewall protection shield",
+            "network security",
+            "blocking access digital"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-008",
+          "title": "VPNs explained: how they protect your privacy",
+          "keywords": [
+            "vpn",
+            "privacy",
+            "encryption"
+          ],
+          "search_terms": [
+            "vpn connection screen",
+            "encrypted tunnel",
+            "privacy protection digital"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-009",
+          "title": "WiFi security and wireless network attacks",
+          "keywords": [
+            "wifi",
+            "wireless",
+            "security"
+          ],
+          "search_terms": [
+            "wifi router signal",
+            "wireless network connection",
+            "phone connecting wifi"
+          ],
+          "completed": false
+        },
+        {
+          "id": "net-010",
+          "title": "NAT and DHCP explained for beginners",
+          "keywords": [
+            "nat",
+            "dhcp",
+            "networking"
+          ],
+          "search_terms": [
+            "router configuration screen",
+            "network settings",
+            "ip assignment automatic"
+          ],
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "Penetration Testing",
+      "topics": [
+        {
+          "id": "pentest-001",
+          "title": "What is penetration testing and is it legal",
+          "keywords": [
+            "pentest",
+            "ethical hacking",
+            "legal"
+          ],
+          "search_terms": [
+            "ethical hacker working",
+            "legal document signing",
+            "cybersecurity professional office"
+          ],
+          "completed": false
+        },
+        {
+          "id": "pentest-002",
+          "title": "The 5 phases of a penetration test",
+          "keywords": [
+            "pentest phases",
+            "methodology",
+            "hacking"
+          ],
+          "search_terms": [
+            "planning strategy whiteboard",
+            "step by step process",
+            "cybersecurity workflow"
+          ],
+          "completed": false
+        },
+        {
+          "id": "pentest-003",
+          "title": "Reconnaissance and information gathering",
+          "keywords": [
+            "recon",
+            "osint",
+            "footprinting"
+          ],
+          "search_terms": [
+            "researching computer screen",
+            "gathering information online",
+            "detective searching data"
+          ],
+          "completed": false
+        },
+        {
+          "id": "pentest-004",
+          "title": "Vulnerability scanning explained",
+          "keywords": [
+            "vulnerability",
+            "scanning",
+            "assessment"
+          ],
+          "search_terms": [
+            "scanning network security",
+            "finding bugs code",
+            "vulnerability alert screen"
+          ],
+          "completed": false
+        },
+        {
+          "id": "pentest-005",
+          "title": "Exploitation basics: how hackers break in",
+          "keywords": [
+            "exploitation",
+            "attack",
+            "hacking"
+          ],
+          "search_terms": [
+            "hacker dark room typing",
+            "breaking security system",
+            "exploit code running"
+          ],
+          "completed": false
+        },
+        {
+          "id": "pentest-006",
+          "title": "Privilege escalation explained",
+          "keywords": [
+            "privilege escalation",
+            "root",
+            "admin"
+          ],
+          "search_terms": [
+            "admin access screen",
+            "unlocking permissions",
+            "escalating access levels"
+          ],
+          "completed": false
+        },
+        {
+          "id": "pentest-007",
+          "title": "Bug bounty programs: how to get paid to hack",
+          "keywords": [
+            "bug bounty",
+            "hackerone",
+            "rewards"
+          ],
+          "search_terms": [
+            "earning money online",
+            "bug report submission",
+            "hacker earning rewards"
+          ],
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "AI Fundamentals",
+      "topics": [
+        {
+          "id": "ai-001",
+          "title": "AI vs machine learning vs deep learning explained",
+          "keywords": [
+            "ai",
+            "machine learning",
+            "deep learning"
+          ],
+          "search_terms": [
+            "artificial intelligence robot",
+            "brain neural network",
+            "machine learning visualization"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-002",
+          "title": "How neural networks actually work",
+          "keywords": [
+            "neural network",
+            "ai",
+            "neurons"
+          ],
+          "search_terms": [
+            "brain connections neural",
+            "network nodes connecting",
+            "neural pathway digital"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-003",
+          "title": "Supervised vs unsupervised learning",
+          "keywords": [
+            "supervised",
+            "unsupervised",
+            "training"
+          ],
+          "search_terms": [
+            "teacher student learning",
+            "sorting categorizing data",
+            "training data screen"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-004",
+          "title": "How ChatGPT and large language models work",
+          "keywords": [
+            "chatgpt",
+            "llm",
+            "transformers"
+          ],
+          "search_terms": [
+            "chatbot conversation screen",
+            "ai typing response",
+            "language processing digital"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-005",
+          "title": "Natural language processing explained",
+          "keywords": [
+            "nlp",
+            "text",
+            "language"
+          ],
+          "search_terms": [
+            "text analysis screen",
+            "language translation digital",
+            "processing words computer"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-006",
+          "title": "Computer vision: how AI sees images",
+          "keywords": [
+            "computer vision",
+            "image recognition",
+            "ai"
+          ],
+          "search_terms": [
+            "camera detecting objects",
+            "image recognition screen",
+            "ai analyzing photo"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-007",
+          "title": "AI ethics and bias: what you need to know",
+          "keywords": [
+            "ai ethics",
+            "bias",
+            "fairness"
+          ],
+          "search_terms": [
+            "balance scale justice",
+            "ethical decision making",
+            "fairness equality digital"
+          ],
+          "completed": false
+        },
+        {
+          "id": "ai-008",
+          "title": "How to write effective AI prompts",
+          "keywords": [
+            "prompting",
+            "ai",
+            "chatgpt"
+          ],
+          "search_terms": [
+            "typing prompt chatbot",
+            "ai conversation screen",
+            "writing instructions computer"
+          ],
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "AI Tools",
+      "topics": [
+        {
+          "id": "tools-001",
+          "title": "Best AI tools for coding in 2026",
+          "keywords": [
+            "ai coding",
+            "copilot",
+            "tools"
+          ],
+          "search_terms": [
+            "ai code editor",
+            "programming with ai",
+            "coding assistant screen"
+          ],
+          "completed": false
+        },
+        {
+          "id": "tools-002",
+          "title": "Best AI tools for cybersecurity",
+          "keywords": [
+            "ai security",
+            "threat detection",
+            "tools"
+          ],
+          "search_terms": [
+            "security dashboard screen",
+            "threat detection alert",
+            "ai monitoring system"
+          ],
+          "completed": false
+        },
+        {
+          "id": "tools-003",
+          "title": "Claude vs ChatGPT vs Gemini: which to use",
+          "keywords": [
+            "claude",
+            "chatgpt",
+            "comparison"
+          ],
+          "search_terms": [
+            "comparing options screen",
+            "ai chatbot interface",
+            "multiple ai tools"
+          ],
+          "completed": false
+        },
+        {
+          "id": "tools-004",
+          "title": "Using AI for threat detection and monitoring",
+          "keywords": [
+            "ai security",
+            "monitoring",
+            "siem"
+          ],
+          "search_terms": [
+            "security operations center",
+            "monitoring dashboard",
+            "threat alert system"
+          ],
+          "completed": false
+        },
+        {
+          "id": "tools-005",
+          "title": "Automating tasks with AI: practical guide",
+          "keywords": [
+            "automation",
+            "ai",
+            "productivity"
+          ],
+          "search_terms": [
+            "automation workflow screen",
+            "robot process automation",
+            "ai productivity tools"
+          ],
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "Career and Certifications",
+      "topics": [
+        {
+          "id": "career-001",
+          "title": "CompTIA Security Plus roadmap for beginners",
+          "keywords": [
+            "security+",
+            "comptia",
+            "certification"
+          ],
+          "search_terms": [
+            "certification study desk",
+            "exam preparation books",
+            "student studying computer"
+          ],
+          "completed": false
+        },
+        {
+          "id": "career-002",
+          "title": "CompTIA Network Plus explained",
+          "keywords": [
+            "network+",
+            "comptia",
+            "networking"
+          ],
+          "search_terms": [
+            "networking certification study",
+            "exam preparation",
+            "learning networking"
+          ],
+          "completed": false
+        },
+        {
+          "id": "career-003",
+          "title": "CEH vs OSCP: which certification first",
+          "keywords": [
+            "ceh",
+            "oscp",
+            "certification"
+          ],
+          "search_terms": [
+            "choosing path decision",
+            "certification comparison",
+            "career decision making"
+          ],
+          "completed": false
+        },
+        {
+          "id": "career-004",
+          "title": "How to build a cybersecurity home lab",
+          "keywords": [
+            "home lab",
+            "practice",
+            "learning"
+          ],
+          "search_terms": [
+            "home computer setup",
+            "multiple monitors desk",
+            "tech workspace home"
+          ],
+          "completed": false
+        },
+        {
+          "id": "career-005",
+          "title": "Getting your first cybersecurity internship",
+          "keywords": [
+            "internship",
+            "career",
+            "entry level"
+          ],
+          "search_terms": [
+            "job interview office",
+            "resume writing screen",
+            "young professional working"
+          ],
+          "completed": false
+        },
+        {
+          "id": "career-006",
+          "title": "Cybersecurity career paths explained",
+          "keywords": [
+            "career",
+            "soc analyst",
+            "pentest"
+          ],
+          "search_terms": [
+            "career path roadmap",
+            "professional working security",
+            "cybersecurity office team"
+          ],
+          "completed": false
+        },
+        {
+          "id": "career-007",
+          "title": "Building a CS portfolio that gets hired",
+          "keywords": [
+            "portfolio",
+            "github",
+            "resume"
+          ],
+          "search_terms": [
+            "portfolio website screen",
+            "github profile code",
+            "building projects computer"
+          ],
+          "completed": false
+        }
+      ]
+    }
+  ]
+}

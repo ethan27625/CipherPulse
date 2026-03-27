@@ -90,6 +90,7 @@ def _append_run(entry: dict) -> None:
 def run_pipeline(
     dry_run: bool = False,
     publish_at: Optional[str] = None,
+    mode: str = "news",
 ) -> dict:
     """
     Execute one complete Short production cycle.
@@ -98,6 +99,8 @@ def run_pipeline(
         dry_run:    If True, skip real platform uploads.
         publish_at: ISO 8601 UTC string for YouTube scheduled publishing.
                     If None, publishes immediately (or uses default scheduling).
+        mode:       "news" (default) — uses topics.json + news prompt.
+                    "edu" — uses edu_curriculum.json + edu prompt + curriculum search terms.
 
     Returns:
         A run-record dict written to run_log.json.
@@ -125,25 +128,48 @@ def run_pipeline(
     try:
         # ── Stage 1: Topic ─────────────────────────────────────────────────────
         log.info("Stage 1/11 — Picking topic…")
-        from src.topic_picker import pick_topic
-        topic = pick_topic()
-        record["topic"] = {"id": topic.id, "topic": topic.topic, "format": topic.format}
-        log.info(f"  Topic #{topic.id}: {topic.topic!r} (format {topic.format})")
+        edu_search_terms: list[str] = []   # populated in edu mode; used in Stage 5
+
+        if mode == "edu":
+            from src.edu_topic_selector import pick_edu_topic
+            import types as _types
+            _raw_edu = pick_edu_topic()
+            # Wrap into a duck-type compatible namespace so stages 3-12 work unchanged
+            topic = _types.SimpleNamespace(
+                id=_raw_edu.id,
+                topic=_raw_edu.title,
+                format=4,   # "How It Works" — closest to edu explainer style
+            )
+            edu_search_terms = _raw_edu.search_terms[:3]
+            record["topic"] = {
+                "id": topic.id,
+                "topic": topic.topic,
+                "category": _raw_edu.category_name,
+                "mode": "edu",
+            }
+            log.info(f"  Edu topic [{_raw_edu.category_name}] {topic.id}: {topic.topic!r}")
+        else:
+            from src.topic_picker import pick_topic
+            topic = pick_topic()
+            record["topic"] = {"id": topic.id, "topic": topic.topic, "format": topic.format}
+            log.info(f"  Topic #{topic.id}: {topic.topic!r} (format {topic.format})")
 
         # ── Stage 2: News ──────────────────────────────────────────────────────
         log.info("Stage 2/11 — Fetching news headlines…")
         news_context: Optional[str] = None
-        try:
-            from src.news_fetcher import fetch_all_headlines
-            headlines = fetch_all_headlines()
-            if headlines:
-                # Pass the top 3 headlines as context for format F6 (News React)
-                news_context = "\n".join(h.to_prompt_context() for h in headlines[:3])
-                log.info(f"  Fetched {len(headlines)} fresh headlines")
-        except Exception as exc:
-            log.warning(f"  News fetch failed (non-fatal): {exc}")
+        if mode == "edu":
+            log.info("  News fetch skipped (edu mode)")
+        else:
+            try:
+                from src.news_fetcher import fetch_all_headlines
+                headlines = fetch_all_headlines()
+                if headlines:
+                    news_context = "\n".join(h.to_prompt_context() for h in headlines[:3])
+                    log.info(f"  Fetched {len(headlines)} fresh headlines")
+            except Exception as exc:
+                log.warning(f"  News fetch failed (non-fatal): {exc}")
 
-        is_text_card = (topic.format == 7)
+        is_text_card = False  # Text card format permanently disabled — footage+voiceover only
 
         # ── Stage 3: Content generation ────────────────────────────────────────
         if is_text_card:
@@ -168,6 +194,7 @@ def run_pipeline(
                 topic=topic.topic,
                 format_id=topic.format,
                 news_context=news_context if topic.format == 6 else None,
+                mode=mode,
             )
             (out_dir / "script.txt").write_text(script.to_file_content())
             record["script"] = {
@@ -181,7 +208,9 @@ def run_pipeline(
             )
             content_title       = script.title
             content_full_text   = script.full_text
-            content_visual_tags = script.visual_tags
+            # Edu mode: use the curriculum's curated search_terms instead of
+            # script.visual_tags so Pexels footage matches the lesson being taught.
+            content_visual_tags = edu_search_terms if mode == "edu" else script.visual_tags
 
         # ── Stage 4: Voiceover (voiceover path only) ───────────────────────────
         if is_text_card:
@@ -203,16 +232,23 @@ def run_pipeline(
                 f"  Voice: {voice.duration_seconds:.1f}s, "
                 f"{voice.word_count} words, {voice.caption_count} captions"
             )
-            # Hard duration gate — Shorts must be strictly under 58 seconds.
-            # voice_generator logs a warning but never raises; enforce here so
-            # an over-length voiceover never reaches upload.
-            MAX_VOICEOVER_SECONDS = 58
-            if voice.duration_seconds > MAX_VOICEOVER_SECONDS:
-                raise RuntimeError(
-                    f"Voiceover is {voice.duration_seconds:.1f}s — exceeds "
-                    f"{MAX_VOICEOVER_SECONDS}s Short limit. "
-                    "Regenerate with a shorter script."
-                )
+            # Duration gate — news mode hard-fails above 58s; edu mode warns above 45s.
+            # (Edu scripts target 60-80 words ≈ 33-44s; warn threshold is generous.)
+            if mode == "edu":
+                EDU_WARN_SECONDS = 45
+                if voice.duration_seconds > EDU_WARN_SECONDS:
+                    log.warning(
+                        f"Edu voiceover is {voice.duration_seconds:.1f}s — "
+                        f"target is ≤35s (consider tighter script next time)"
+                    )
+            else:
+                MAX_VOICEOVER_SECONDS = 58
+                if voice.duration_seconds > MAX_VOICEOVER_SECONDS:
+                    raise RuntimeError(
+                        f"Voiceover is {voice.duration_seconds:.1f}s — exceeds "
+                        f"{MAX_VOICEOVER_SECONDS}s Short limit. "
+                        "Regenerate with a shorter script."
+                    )
 
         # ── Stage 5: Footage ───────────────────────────────────────────────────
         log.info("Stage 5/12 — Downloading footage clips…")
@@ -276,6 +312,8 @@ def run_pipeline(
                 title=content_title,
                 output_dir=out_dir,
                 format_id=topic.format,
+                video_path=video_path,
+                hook_line=script.hook,
             )
         record["thumbnail"] = {"path": str(thumb_path)}
         log.info(f"  Thumbnail: {thumb_path}")
@@ -289,6 +327,7 @@ def run_pipeline(
             script_text=content_full_text,
             video_title=content_title,
             output_dir=out_dir,
+            mode=mode,
         )
         record["seo"] = {"yt_title": metadata.youtube.title}
         log.info(f"  YouTube title: {metadata.youtube.title!r}")
@@ -501,11 +540,13 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 -m src.orchestrator                  # produce 1 Short
-  python3 -m src.orchestrator --count 3        # produce 3 Shorts
-  python3 -m src.orchestrator --dry-run        # full pipeline, skip real uploads
-  python3 -m src.orchestrator --publish-scheduled  # flush TikTok queue
-  python3 -m src.orchestrator --retry-failed   # re-upload failed platforms
+  python3 -m src.orchestrator                       # 1 news Short
+  python3 -m src.orchestrator --count 3             # 3 news Shorts
+  python3 -m src.orchestrator --dry-run             # full pipeline, skip real uploads
+  python3 -m src.orchestrator --mode edu            # 1 edu explainer Short
+  python3 -m src.orchestrator --mode edu --dry-run  # edu dry-run
+  python3 -m src.orchestrator --publish-scheduled   # flush TikTok queue
+  python3 -m src.orchestrator --retry-failed        # re-upload failed platforms
 """,
     )
     parser.add_argument(
@@ -536,6 +577,12 @@ Examples:
         default=None,
         help="Schedule YouTube upload at this UTC time (e.g. 2024-03-15T20:00:00Z)",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["news", "edu"],
+        default="news",
+        help="Content mode: 'news' (default) uses topics.json; 'edu' uses edu_curriculum.json",
+    )
     args = parser.parse_args()
 
     # ── Special modes ──────────────────────────────────────────────────────────
@@ -557,7 +604,7 @@ Examples:
     # ── Production / dry-run pipeline ─────────────────────────────────────────
     mode_label = "DRY RUN" if args.dry_run else "PRODUCTION"
     log.info("═" * 60)
-    log.info(f"CipherPulse — {mode_label} — producing {args.count} Short(s)")
+    log.info(f"CipherPulse — {mode_label} [{args.mode.upper()}] — producing {args.count} Short(s)")
     log.info("═" * 60)
 
     # When producing multiple videos, auto-schedule them across coming days
@@ -576,7 +623,7 @@ Examples:
         if args.count > 1:
             log.info(f"\n── Run {i + 1} of {args.count} ──")
         publish_at = publish_schedule[i] if publish_schedule else args.publish_at
-        record = run_pipeline(dry_run=args.dry_run, publish_at=publish_at)
+        record = run_pipeline(dry_run=args.dry_run, publish_at=publish_at, mode=args.mode)
         log.info(
             f"\nRun {record['run_id']} → {record['status'].upper()}"
             f"  [{record.get('finished_at', '')}]"
