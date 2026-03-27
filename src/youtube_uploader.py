@@ -511,8 +511,11 @@ def upload_short(
 
         video_id = _upload_with_retry(service, video_path, body)
 
-        # Set thumbnail (non-fatal if it fails)
-        _set_thumbnail(service, video_id, thumbnail_path)
+        # NOTE: thumbnails().set() does NOT work for YouTube Shorts — the API
+        # rejects it silently or returns 403. The Shorts thumbnail is auto-selected
+        # from the video frames. We bake a branded 0.5-second intro frame into the
+        # video itself (in video_assembler._prepend_intro_frame) so the auto-grab
+        # always captures our hook text on a dark background. No API call needed.
 
         url    = f"https://www.youtube.com/shorts/{video_id}"
         status = "scheduled" if publish_at else "uploaded"

@@ -58,6 +58,15 @@ MUSIC_VOLUME = 0.25     # Background music at 25% under voiceover
 MUSIC_DIR = Path(__file__).parent.parent / "assets" / "music"
 FONTS_DIR = Path(__file__).parent.parent / "assets" / "fonts"
 
+# ── Branded intro frame (baked-in thumbnail for Shorts) ───────────────────────
+# YouTube does not support custom thumbnails for Shorts via the API.
+# Instead, we prepend a 0.5-second branded frame so the auto-generated
+# Shorts thumbnail captures the hook text on a dark branded background.
+INTRO_DURATION     = 0.5    # seconds — just enough for YouTube to grab as thumbnail
+INTRO_FRAME_FPS    = 30
+INTRO_FONT_SIZE    = 88     # px — hook text height on 1080×1920 portrait frame
+INTRO_OVERLAY_ALPHA = 168   # 0-255; 168 ≈ 66% black overlay over the footage frame
+
 # ── Dark cinematic color grade ────────────────────────────────────────────────
 # Applied to every footage clip before concat.
 # eq filter:         brightness/contrast adjustment
@@ -426,6 +435,175 @@ def _run_ffmpeg(cmd: list[str]) -> None:
     log.info("FFmpeg completed successfully")
 
 
+# ── Branded intro frame helpers ───────────────────────────────────────────────
+
+def _make_intro_frame(hook_line: str, first_clip_path: Path, out_path: Path) -> Path:
+    """
+    Create a 1080×1920 branded PNG to use as the baked-in Shorts thumbnail frame.
+
+    Layers:
+      1. A real frame from first_clip_path (grabbed at 1 second) — gives the
+         intro an authentic cinematic look rather than a flat solid colour.
+      2. A 66%-opacity black overlay — ensures text is readable over any footage.
+      3. Hook text centred vertically, large Bebas Neue, white with drop shadow,
+         word-wrapped to ≤3 lines within 920px of the 1080px frame width.
+      4. "CIPHERPULSE" watermark top-left in brand cyan at 50% opacity.
+
+    Args:
+        hook_line:       The script's opening hook sentence (upper-cased on draw).
+        first_clip_path: Path to the first video clip; a frame is extracted at 1s.
+        out_path:        Destination for the finished PNG.
+
+    Returns:
+        out_path (always written even if frame extraction fails — falls back to
+        solid brand-black background).
+    """
+    import tempfile
+    from PIL import Image, ImageDraw, ImageFont
+
+    # ── Extract a frame from the first (guaranteed-dark) clip ─────────────────
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as _tf:
+        frame_tmp = Path(_tf.name)
+
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-ss", "1.0",
+                "-i", str(first_clip_path),
+                "-vframes", "1",
+                "-vf", (
+                    f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}"
+                    ":force_original_aspect_ratio=increase,"
+                    f"crop={VIDEO_WIDTH}:{VIDEO_HEIGHT}"
+                ),
+                str(frame_tmp),
+            ],
+            capture_output=True,
+            timeout=15,
+        )
+    except Exception as exc:
+        log.warning(f"Intro frame extraction failed: {exc}")
+
+    if frame_tmp.exists() and frame_tmp.stat().st_size > 0:
+        bg = Image.open(frame_tmp).convert("RGBA")
+    else:
+        bg = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (6, 6, 9, 255))
+    frame_tmp.unlink(missing_ok=True)
+
+    # ── Dark overlay ──────────────────────────────────────────────────────────
+    overlay = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (0, 0, 0, INTRO_OVERLAY_ALPHA))
+    bg = Image.alpha_composite(bg, overlay)
+    draw = ImageDraw.Draw(bg)
+
+    # ── Load fonts ────────────────────────────────────────────────────────────
+    bebas_path = FONTS_DIR / "BebasNeue-Regular.ttf"
+    try:
+        body_font = ImageFont.truetype(str(bebas_path), INTRO_FONT_SIZE)
+        wm_font   = ImageFont.truetype(str(bebas_path), 28)
+    except Exception:
+        body_font = ImageFont.load_default()
+        wm_font   = body_font
+
+    # ── Word-wrap hook_line to fit within 920px (80px margin each side) ───────
+    text       = hook_line.upper()
+    max_w      = VIDEO_WIDTH - 160  # 920px text area
+    words      = text.split()
+    lines: list[str] = []
+    current    = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        w = body_font.getbbox(candidate)[2] - body_font.getbbox(candidate)[0]
+        if w <= max_w:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    lines = lines[:3]  # hard cap — 3 lines max
+
+    # ── Draw text centred vertically ──────────────────────────────────────────
+    line_gap  = INTRO_FONT_SIZE + 18
+    block_h   = len(lines) * line_gap
+    y_start   = (VIDEO_HEIGHT - block_h) // 2
+
+    for i, line in enumerate(lines):
+        bbox   = body_font.getbbox(line)
+        text_w = bbox[2] - bbox[0]
+        x      = (VIDEO_WIDTH - text_w) // 2
+        y      = y_start + i * line_gap
+        # Drop shadow
+        draw.text((x + 3, y + 3), line, font=body_font, fill=(0, 0, 0, 200))
+        # White main text
+        draw.text((x, y), line, font=body_font, fill=(255, 255, 255, 255))
+
+    # ── CIPHERPULSE watermark — top-left, brand cyan at 50% opacity ───────────
+    draw.text((24, 24), "CIPHERPULSE", font=wm_font, fill=(0, 242, 234, 128))
+
+    bg.convert("RGB").save(str(out_path), "PNG")
+    return out_path
+
+
+def _prepend_intro_frame(frame_png: Path, main_video: Path) -> Path:
+    """
+    Prepend a 0.5-second branded intro frame to an already-assembled video.
+
+    Uses a two-input FFmpeg pass:
+      Input 0 — frame_png looped for INTRO_DURATION seconds → intro video segment
+      Input 1 — main_video (voice+music already mixed, subtitles already burned)
+
+    Filter graph:
+      Video: [intro_v] + [main_v] → concat → [vout]
+      Audio: INTRO_DURATION s of silence + [main audio] → concat → [aout]
+
+    The re-encode is necessary because H.264 concat requires consistent stream
+    parameters. For a 30-45s video at CRF 23 this adds ~3-5 seconds of wall time.
+
+    Args:
+        frame_png:  Path to the 1080×1920 branded intro PNG.
+        main_video: Path to the assembled video — overwritten in-place on success.
+
+    Returns:
+        main_video path (same path, now contains the prepended intro).
+    """
+    tmp_out = main_video.with_suffix(".intro_tmp.mp4")
+
+    filter_complex = (
+        f"[0:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT},setsar=1,"
+        f"format=yuv420p,setpts=PTS-STARTPTS[intro_v];"
+        f"[1:v]setpts=PTS-STARTPTS[main_v];"
+        f"[intro_v][main_v]concat=n=2:v=1:a=0[vout];"
+        f"anullsrc=cl=stereo:r=44100,atrim=duration={INTRO_DURATION},"
+        f"asetpts=PTS-STARTPTS[sil];"
+        f"[sil][1:a]concat=n=2:v=0:a=1[aout]"
+    )
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-loop", "1", "-framerate", str(INTRO_FRAME_FPS),
+        "-t", str(INTRO_DURATION),
+        "-i", str(frame_png),
+        "-i", str(main_video),
+        "-filter_complex", filter_complex,
+        "-map", "[vout]",
+        "-map", "[aout]",
+        "-c:v", "libx264",
+        "-preset", VIDEO_PRESET,
+        "-crf", str(VIDEO_CRF),
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", AUDIO_BITRATE,
+        "-movflags", "+faststart",
+        str(tmp_out),
+    ]
+
+    _run_ffmpeg(cmd)
+    tmp_out.replace(main_video)
+    return main_video
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def assemble_video(
@@ -434,6 +612,7 @@ def assemble_video(
     srt_path: Path,          # accepts .ass or .srt (named srt_path for backward compat)
     output_dir: Path,
     music_track: Optional[Path] = None,
+    hook_line: str = "",
 ) -> Path:
     """
     Assemble a finished CipherPulse Short from its component files.
@@ -447,6 +626,10 @@ def assemble_video(
         output_dir:     Directory to write video.mp4 into
         music_track:    Optional path to background music. If None, auto-selects
                         from assets/music/ (or produces voice-only if empty).
+        hook_line:      Hook sentence from the script. When provided, a 0.5-second
+                        branded intro frame is prepended to the video — giving
+                        YouTube Shorts a dark branded thumbnail (the API cannot
+                        set Shorts thumbnails; the auto-grab comes from frame 0).
 
     Returns:
         Path to the finished video.mp4
@@ -556,6 +739,25 @@ def assemble_video(
         f"({size_mb:.1f} MB, {real_duration:.1f}s, "
         f"{VIDEO_WIDTH}×{VIDEO_HEIGHT})"
     )
+
+    # ── Prepend branded intro frame (baked-in Shorts thumbnail) ───────────────
+    # YouTube Shorts auto-selects the thumbnail from the first frame of the video.
+    # We bake a 0.5-second hook-text frame at the start so the auto-grab always
+    # captures a dark branded image instead of random footage.
+    if hook_line and clip_paths:
+        try:
+            intro_png = output_dir / "intro_frame.png"
+            _make_intro_frame(hook_line, clip_paths[0], intro_png)
+            _prepend_intro_frame(intro_png, output_path)
+            intro_png.unlink(missing_ok=True)  # clean up temp PNG
+            new_duration = _get_video_duration(output_path)
+            new_size_mb  = output_path.stat().st_size / 1024 / 1024
+            log.info(
+                f"Intro frame prepended — final: "
+                f"{new_size_mb:.1f} MB, {new_duration:.1f}s"
+            )
+        except Exception as exc:
+            log.warning(f"Intro frame prepend failed (non-fatal): {exc}")
 
     return output_path
 
