@@ -62,7 +62,10 @@ FONTS_DIR = Path(__file__).parent.parent / "assets" / "fonts"
 # YouTube does not support custom thumbnails for Shorts via the API.
 # Instead, we prepend a 0.5-second branded frame so the auto-generated
 # Shorts thumbnail captures the hook text on a dark branded background.
-INTRO_DURATION     = 0.5    # seconds — just enough for YouTube to grab as thumbnail
+INTRO_DURATION     = 1.5    # seconds of branded frame at START — more frames = higher
+                            # chance YouTube's thumbnail sampler lands on our hook text
+OUTRO_DURATION     = 1.0    # seconds of same branded frame at END — YouTube sometimes
+                            # picks ending frames; doubling coverage doubles our odds
 INTRO_FRAME_FPS    = 30
 INTRO_FONT_SIZE    = 88     # px — hook text height on 1080×1920 portrait frame
 INTRO_OVERLAY_ALPHA = 168   # 0-255; 168 ≈ 66% black overlay over the footage frame
@@ -550,16 +553,20 @@ def _prepend_intro_frame(frame_png: Path, main_video: Path) -> Path:
     """
     Prepend a 0.5-second branded intro frame to an already-assembled video.
 
-    Uses a two-input FFmpeg pass:
-      Input 0 — frame_png looped for INTRO_DURATION seconds → intro video segment
+    Uses a three-input FFmpeg pass:
+      Input 0 — frame_png looped for INTRO_DURATION seconds (1.5s intro)
       Input 1 — main_video (voice+music already mixed, subtitles already burned)
+      Input 2 — frame_png looped for OUTRO_DURATION seconds (1.0s outro)
 
     Filter graph:
-      Video: [intro_v] + [main_v] → concat → [vout]
-      Audio: INTRO_DURATION s of silence + [main audio] → concat → [aout]
+      Video: [intro_v] + [main_v] + [outro_v] → concat → [vout]
+      Audio: 1.5s silence + [main audio] + 1.0s silence → concat → [aout]
+
+    Bookending the video maximises the chance YouTube's thumbnail sampler picks
+    the branded frame — it samples from both early and late positions.
 
     The re-encode is necessary because H.264 concat requires consistent stream
-    parameters. For a 30-45s video at CRF 23 this adds ~3-5 seconds of wall time.
+    parameters. For a 30-45s video at CRF 23 this adds ~5-10 seconds of wall time.
 
     Args:
         frame_png:  Path to the 1080×1920 branded intro PNG.
@@ -570,22 +577,36 @@ def _prepend_intro_frame(frame_png: Path, main_video: Path) -> Path:
     """
     tmp_out = main_video.with_suffix(".intro_tmp.mp4")
 
+    # Three-segment concat: [intro 1.5s] + [main video] + [outro 1.0s]
+    # Input 0 — frame_png looped for INTRO_DURATION (start)
+    # Input 1 — main_video (voice+music+subtitles already assembled)
+    # Input 2 — frame_png looped for OUTRO_DURATION (end)
     filter_complex = (
         f"[0:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT},setsar=1,"
         f"format=yuv420p,setpts=PTS-STARTPTS[intro_v];"
         f"[1:v]setpts=PTS-STARTPTS[main_v];"
-        f"[intro_v][main_v]concat=n=2:v=1:a=0[vout];"
+        f"[2:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT},setsar=1,"
+        f"format=yuv420p,setpts=PTS-STARTPTS[outro_v];"
+        f"[intro_v][main_v][outro_v]concat=n=3:v=1:a=0[vout];"
         f"anullsrc=cl=stereo:r=44100,atrim=duration={INTRO_DURATION},"
-        f"asetpts=PTS-STARTPTS[sil];"
-        f"[sil][1:a]concat=n=2:v=0:a=1[aout]"
+        f"asetpts=PTS-STARTPTS[sil_s];"
+        f"anullsrc=cl=stereo:r=44100,atrim=duration={OUTRO_DURATION},"
+        f"asetpts=PTS-STARTPTS[sil_e];"
+        f"[sil_s][1:a][sil_e]concat=n=3:v=0:a=1[aout]"
     )
 
     cmd = [
         "ffmpeg", "-y",
+        # Input 0: intro frame (1.5s)
         "-loop", "1", "-framerate", str(INTRO_FRAME_FPS),
         "-t", str(INTRO_DURATION),
         "-i", str(frame_png),
+        # Input 1: main assembled video
         "-i", str(main_video),
+        # Input 2: outro frame (1.0s) — same branded PNG
+        "-loop", "1", "-framerate", str(INTRO_FRAME_FPS),
+        "-t", str(OUTRO_DURATION),
+        "-i", str(frame_png),
         "-filter_complex", filter_complex,
         "-map", "[vout]",
         "-map", "[aout]",
