@@ -182,19 +182,31 @@ CATEGORY_SYNONYMS: dict[str, list[str]] = {
     ],
 }
 
-# ── Guaranteed-dark first-clip pool ────────────────────────────────────────────
-# The opening frame determines whether viewers stay or swipe.
-# These 3 terms ALWAYS produce dark, techy-looking clips on Pexels.
-# One is chosen at random and fetched as clip #1 before Phase 1 runs.
-DARK_CYBER_FIRST_CLIP_POOL: list[str] = [
-    "hacker dark room",
-    "code on computer screen dark",
-    "server room dark",
+# ── Master dark/cyber search pool ──────────────────────────────────────────────
+# ALL Pexels searches (both news and edu modes) draw exclusively from this list.
+# Every term is proven to return dark, cybersecurity-aesthetic clips on Pexels.
+# NEVER use script visual_tags or edu curriculum search_terms for Pexels —
+# they produce irrelevant bright footage (robots, offices, kids, headsets).
+#
+# Phase 0 picks 1 opener; Phase 1 picks PHASE1_POOL_COUNT more (all random).
+# Phases 2-3 fall back to DARK_CYBER_POOL synonyms/generics if still short.
+DARK_CYBER_SEARCH_POOL: list[str] = [
+    "hacker dark room computer",
+    "code on screen dark room",
+    "server room dark lights",
+    "typing keyboard dark",
+    "cybersecurity dark screen",
+    "programming code dark monitor",
+    "data center dark server",
+    "matrix code green screen dark",
+    "hooded person computer dark",
+    "dark room multiple monitors",
+    "cyber attack visualization dark",
+    "encrypted data screen dark",
 ]
+PHASE1_POOL_COUNT = 3   # How many random pool terms to use in Phase 1
 
-# ── Dark/cyber footage pool ─────────────────────────────────────────────────────
-# Used for Phase 2 synonyms (dark-tech category) and Phase 3 generic fallbacks.
-# EVERY term explicitly references dark/cyber — never generic office or lifestyle.
+# ── Dark/cyber footage pool (Phase 2-3 synonyms & fallbacks) ───────────────────
 DARK_CYBER_POOL: list[str] = [
     "hacker dark room",
     "cybersecurity dark",
@@ -614,31 +626,27 @@ def fetch_clips_for_script(
     """
     Fetch enough unique video clips to fill an entire video with no repetition.
 
-    Uses a 4-phase strategy to reach target_clips unique clips:
+    Uses a 3-phase strategy to reach target_clips unique clips.
+    ALL searches draw exclusively from DARK_CYBER_SEARCH_POOL — script visual_tags
+    and edu curriculum search_terms are intentionally ignored because topic-specific
+    Pexels searches return irrelevant bright footage (robots, offices, kids, etc.).
 
-    Phase 0 — Guaranteed dark opener (when guaranteed_dark_first=True):
-        Fetches clip #1 from DARK_CYBER_FIRST_CLIP_POOL (randomly chosen).
-        Ensures the opening frame always looks dark and cybersecurity-themed
-        regardless of what topic-specific tags the script generated.
+    Phase 1 — Pool sample:
+        Randomly samples PHASE1_POOL_COUNT+1 terms from DARK_CYBER_SEARCH_POOL.
+        Guarantees every clip comes from the curated dark/cyber aesthetic list.
 
-    Phase 1 — Primary tags:
-        One clip per [VISUAL] tag from the script. Each clip is guaranteed
-        unique (IDs tracked in seen_ids and excluded from subsequent searches).
-
-    Phase 2 — Synonym expansion:
-        For each tag's category, searches CATEGORY_SYNONYMS related terms to
-        find additional unique clips. Stops as soon as target_clips is reached.
+    Phase 2 — DARK_CYBER_POOL synonyms:
+        Iterates DARK_CYBER_POOL to fill remaining slots with more dark clips.
 
     Phase 3 — Generic fallbacks:
-        Searches GENERIC_CLIP_TERMS (all dark/cyber themed) to fill any
-        remaining slots. These are visually consistent with the brand even
-        when the topic-specific searches ran dry.
+        Searches GENERIC_CLIP_TERMS to fill any remaining slots.
 
     Args:
-        visual_tags:           List of tag strings from Script.visual_tags
+        visual_tags:           Accepted for backward compatibility — IGNORED.
+                               Searches now always use DARK_CYBER_SEARCH_POOL.
         target_clips:          How many unique clips to collect (default TARGET_CLIPS_PER_VIDEO)
-        guaranteed_dark_first: If True (default), fetch clip #1 from
-                               DARK_CYBER_FIRST_CLIP_POOL before all other phases.
+        guaranteed_dark_first: Accepted for backward compatibility — IGNORED.
+                               Pool-only mode already guarantees dark clips.
 
     Returns:
         List of unique local MP4 paths. Length is min(target_clips, available_clips).
@@ -666,37 +674,35 @@ def fetch_clips_for_script(
         clip_paths.append(path)
         return True
 
-    # ── Phase 0: Guaranteed dark/cyber opening clip ────────────────────────────
-    # Fetch the first clip from the dark pool so the video ALWAYS opens with
-    # a dark cybersecurity aesthetic regardless of the script's visual tags.
-    if guaranteed_dark_first and target_clips > 0:
-        opener_tag = _rnd.choice(DARK_CYBER_FIRST_CLIP_POOL)
-        log.info(f"Phase 0 — guaranteed dark opener: '{opener_tag}'")
-        _try_fetch(opener_tag)
-
-    # ── Phase 1: One clip per visual tag from the script ───────────────────────
-    log.info(f"Phase 1 — primary tags: fetching clips for {len(visual_tags)} visual tag(s)")
-    for i, tag in enumerate(visual_tags):
-        log.info(f"  [{i + 1}/{len(visual_tags)}] '{tag}'")
+    # ── Phase 1: Random sample from DARK_CYBER_SEARCH_POOL ────────────────────
+    # Both news and edu modes ONLY use these curated dark/cyber terms.
+    # Script visual_tags and edu curriculum search_terms are ignored for Pexels
+    # because they produce irrelevant bright footage (robots, offices, etc.).
+    pool_sample = _rnd.sample(
+        DARK_CYBER_SEARCH_POOL,
+        min(PHASE1_POOL_COUNT + 1, len(DARK_CYBER_SEARCH_POOL)),  # +1 for variety
+    )
+    log.info(
+        f"Phase 1 — dark/cyber pool: {len(pool_sample)} term(s) "
+        f"(ignoring script tags — pool-only mode)"
+    )
+    for i, tag in enumerate(pool_sample):
+        log.info(f"  [{i + 1}/{len(pool_sample)}] '{tag}'")
         _try_fetch(tag)
         if len(clip_paths) >= target_clips:
             break
 
-    # ── Phase 2: Synonym expansion per category ────────────────────────────────
+    # ── Phase 2: Synonym expansion from DARK_CYBER_POOL ───────────────────────
     if len(clip_paths) < target_clips:
         log.info(
             f"Phase 2 — synonyms: have {len(clip_paths)}/{target_clips} clips, "
             f"searching related terms"
         )
-        for tag in visual_tags:
+        for synonym in DARK_CYBER_POOL:
             if len(clip_paths) >= target_clips:
                 break
-            category = resolve_category(tag)
-            for synonym in CATEGORY_SYNONYMS.get(category, []):
-                if len(clip_paths) >= target_clips:
-                    break
-                log.info(f"  synonym '{synonym}' (from tag '{tag}' → '{category}')")
-                _try_fetch(synonym)
+            log.info(f"  pool synonym: '{synonym}'")
+            _try_fetch(synonym)
 
     # ── Phase 3: Generic dark/tech fallbacks ──────────────────────────────────
     if len(clip_paths) < target_clips:

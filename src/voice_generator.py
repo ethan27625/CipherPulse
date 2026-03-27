@@ -117,10 +117,10 @@ def _build_ass(word_events: list[WordEvent], total_duration_ms: int) -> str:
       Box   60% opaque black  → alpha=0x99 → &H99000000
 
     Positioning:
-      Alignment=2 (bottom-center) + MarginV=600 places text 600px from the
-      bottom of the 1920px frame → 1320px from top → ~69% down.
-      This keeps captions above YouTube's bottom UI overlay (subscribe button,
-      caption bar, etc.) which covers roughly the bottom 20% of the frame.
+      Alignment=2 (bottom-center) + MarginV=672 places text 672px from the
+      bottom of the 1920px frame → 1248px from top → exactly 65% down.
+      This keeps captions well above YouTube's bottom UI overlay (subscribe
+      button, caption bar, etc.) which covers roughly the bottom 20% of the frame.
 
     BorderStyle=3 draws an opaque box behind each line using BackColour.
     Outline=0 removes the text outline (the box handles contrast).
@@ -148,7 +148,7 @@ def _build_ass(word_events: list[WordEvent], total_duration_ms: int) -> str:
         "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
         "Alignment, MarginL, MarginR, MarginV, Encoding\n"
         f"Style: Default,Oswald,86,{CYAN_ASS},{WHITE_ASS},{BLACK_ASS},{BOX_ASS},"
-        "-1,0,0,0,100,100,3,0,3,0,0,2,80,80,600,1\n"
+        "-1,0,0,0,100,100,3,0,3,0,0,2,80,80,672,1\n"
         "\n"
         "[Events]\n"
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"

@@ -292,7 +292,6 @@ def run_pipeline(
                 voiceover_path=voice.mp3_path,
                 srt_path=voice.subtitle_path,
                 output_dir=out_dir,
-                hook_line=script.hook,
             )
         record["video"] = {"path": str(video_path), "size_mb": video_path.stat().st_size / 1e6}
         log.info(f"  Video: {record['video']['size_mb']:.1f} MB → {video_path}")
