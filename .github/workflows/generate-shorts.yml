@@ -1,13 +1,23 @@
 name: Generate Shorts
 
-# Runs 3x daily: 8AM, 2PM, 8PM EST (13:00, 19:00, 01:00 UTC)
+# Runs 3x daily — mode is determined by which cron fires:
+#   0 13 * * *  →  8AM EST  →  --mode news
+#   0 17 * * *  →  1PM EST  →  --mode edu
+#   0 1  * * *  →  8PM EST  →  --mode news
+# github.event.schedule contains the exact cron string, used in Step 7 to route mode.
 on:
   schedule:
-    - cron: "0 13 * * *"   # 8AM EST
-    - cron: "0 19 * * *"   # 2PM EST
-    - cron: "0 1  * * *"   # 8PM EST
+    - cron: "0 13 * * *"   # 8AM  EST → news
+    - cron: "0 17 * * *"   # 1PM  EST → edu
+    - cron: "0 1  * * *"   # 8PM  EST → news
   workflow_dispatch:        # allow manual trigger from Actions UI
     inputs:
+      mode:
+        description: "Content mode (news or edu)"
+        required: false
+        default: "news"
+        type: choice
+        options: [news, edu]
       count:
         description: "Number of Shorts to generate"
         required: false
@@ -76,6 +86,8 @@ jobs:
           echo "Music download complete"
 
       # ── 7. Run pipeline ───────────────────────────────────────────────────────
+      # Mode routing for cron triggers: match on github.event.schedule (the exact
+      # cron string that fired). For workflow_dispatch, use the mode input.
       - name: Run CipherPulse pipeline
         env:
           ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
@@ -85,10 +97,23 @@ jobs:
         run: |
           COUNT="${{ github.event.inputs.count || '1' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
-          ARGS="--mode news --count $COUNT"
+          SCHEDULE="${{ github.event.schedule }}"
+
+          # Cron mode routing — match the exact schedule string
+          if [ "$SCHEDULE" = "0 17 * * *" ]; then
+            MODE="edu"
+          elif [ -n "${{ github.event.inputs.mode }}" ]; then
+            MODE="${{ github.event.inputs.mode }}"
+          else
+            MODE="news"
+          fi
+
+          ARGS="--mode $MODE --count $COUNT"
           if [ "$DRY_RUN" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
+
+          echo "Schedule: '$SCHEDULE' → mode=$MODE count=$COUNT dry_run=$DRY_RUN"
           python3 -m src.orchestrator $ARGS
 
       # ── 8. Persist refreshed OAuth token back to secret ───────────────────────
