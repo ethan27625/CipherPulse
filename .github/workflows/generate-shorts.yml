@@ -49,17 +49,33 @@ jobs:
         run: pip install -r requirements.txt
 
       # ── 5. Restore OAuth tokens ───────────────────────────────────────────────
-      # Tokens are stored as base64-encoded secrets so they survive across runs.
-      # On first run: generate tokens locally, then base64-encode and add to secrets.
+      # Token is base64-encoded and stored as a secret so it survives across runs.
+      # IMPORTANT: Step 7 (Persist refreshed token) saves the post-refresh token
+      # back to YOUTUBE_TOKEN_B64 after every successful run — this prevents the
+      # secret from going stale when Google rotates credentials.
       - name: Restore OAuth tokens
         run: |
           mkdir -p config
           if [ -n "${{ secrets.YOUTUBE_TOKEN_B64 }}" ]; then
             echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > config/token.json
             echo "YouTube token restored"
+          else
+            echo "WARNING: YOUTUBE_TOKEN_B64 secret not set — uploads will fail"
           fi
 
-      # ── 6. Run pipeline ───────────────────────────────────────────────────────
+      # ── 6. Download background music (SoundHelix, no API key required) ────────
+      # assets/music/ is gitignored so runners start with no music files.
+      # This step downloads CC0 dark/ambient tracks so every video has real music.
+      # Falls back gracefully to sine-wave drone if this step fails.
+      - name: Download background music
+        continue-on-error: true
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          python3 -m src.download_safe_music --source soundhelix
+          echo "Music download complete"
+
+      # ── 7. Run pipeline ───────────────────────────────────────────────────────
       - name: Run CipherPulse pipeline
         env:
           ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
@@ -69,13 +85,39 @@ jobs:
         run: |
           COUNT="${{ github.event.inputs.count || '1' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
-          ARGS="--count $COUNT"
+          ARGS="--mode news --count $COUNT"
           if [ "$DRY_RUN" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
           python3 -m src.orchestrator $ARGS
 
-      # ── 8. Upload video artifacts ─────────────────────────────────────────────
+      # ── 8. Persist refreshed OAuth token back to secret ───────────────────────
+      # After each run the youtube_uploader auto-refreshes config/token.json.
+      # This step saves the refreshed token back to YOUTUBE_TOKEN_B64 so the
+      # next cron run starts with valid credentials.
+      #
+      # SETUP REQUIRED (one-time):
+      #   1. Go to https://github.com/settings/tokens → Generate new token (classic)
+      #   2. Grant scope: repo (includes secrets:write)
+      #   3. Add it as a repo secret named GH_PAT
+      #      (Settings → Secrets → Actions → New repository secret)
+      # Without GH_PAT this step is skipped — uploads will eventually fail when
+      # the token in YOUTUBE_TOKEN_B64 expires.
+      - name: Persist refreshed OAuth token
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -f config/token.json ] && [ -n "$GH_TOKEN" ]; then
+            gh secret set YOUTUBE_TOKEN_B64 \
+              --body "$(base64 -w 0 config/token.json)" \
+              --repo "${{ github.repository }}"
+            echo "YOUTUBE_TOKEN_B64 secret updated with refreshed token"
+          elif [ -z "$GH_TOKEN" ]; then
+            echo "SKIPPED: GH_PAT secret not configured — see step comment for setup instructions"
+          fi
+
+      # ── 9. Upload video artifacts ─────────────────────────────────────────────
       - name: Upload generated Shorts
         if: always()
         uses: actions/upload-artifact@v4
@@ -88,7 +130,7 @@ jobs:
             output/*/metadata.json
           retention-days: 7
 
-      # ── 9. Upload run log ─────────────────────────────────────────────────────
+      # ── 10. Upload run log ────────────────────────────────────────────────────
       - name: Upload run log
         if: always()
         uses: actions/upload-artifact@v4

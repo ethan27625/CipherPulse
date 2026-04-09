@@ -1,7 +1,7 @@
 {
   "meta": {
-    "current_category_index": 0,
-    "topics_in_current_batch": 3,
+    "current_category_index": 1,
+    "topics_in_current_batch": 1,
     "batch_size": 4
   },
   "categories": [
@@ -66,7 +66,7 @@
             "access denied screen",
             "cybersecurity lock"
           ],
-          "completed": false
+          "completed": true
         },
         {
           "id": "linux-005",
@@ -146,7 +146,7 @@
             "hacker tools dark",
             "cybersecurity professional"
           ],
-          "completed": false
+          "completed": true
         },
         {
           "id": "kali-002",
