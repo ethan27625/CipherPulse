@@ -50,10 +50,9 @@ log = logging.getLogger("script_writer")
 # ── Constants ─────────────────────────────────────────────────────────────────
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1024
-WORDS_PER_MINUTE = 110      # Calibrated to AndrewMultilingualNeural at rate=-5%
-                            # (measured 110-132 wpm in practice — use 110 for conservative estimate)
-MAX_DURATION_SECONDS = 45   # News target ceiling — keeps videos punchy and under 45s
-MIN_DURATION_SECONDS = 30   # Floor — below this feels too rushed for news content
+WORDS_PER_MINUTE = 100      # Conservative floor calibrated from AndrewMultilingualNeural at rate=-5%
+MAX_DURATION_SECONDS = 55   # News target ceiling — 45-55s is the sweet spot for Shorts
+MIN_DURATION_SECONDS = 42   # Floor — below this feels too rushed for news content
 MAX_SCRIPT_RETRIES = 2      # Times to re-prompt if duration is out of range
 
 # Edu mode duration limits — shorter videos (60-80 words ≈ 33-44s at 110 wpm)
@@ -88,10 +87,10 @@ CHANNEL IDENTITY
 - Every sentence must be understandable by a curious 20-year-old with no tech background
 
 WORD COUNT LIMIT (enforce strictly)
-Total script word count: 70-80 words MAXIMUM.
-This is non-negotiable. The voice is read at ~110 words/minute.
-70 words = ~38 seconds. 80 words = ~44 seconds. Stay in this range.
-Count your words before submitting. If you exceed 85 words, cut ruthlessly.
+Total script word count: 80-95 words MAXIMUM.
+This is non-negotiable. The voice is read at ~105 words/minute with pauses.
+80 words = ~46 seconds. 95 words = ~54 seconds. Stay in this range.
+Count your words before submitting. If you exceed 95 words, cut ruthlessly.
 
 SCRIPT STRUCTURE (strictly follow this)
 1. HOOK (2-3 seconds, ~8-10 words): An arresting opening line that stops the scroll.

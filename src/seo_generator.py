@@ -69,7 +69,7 @@ log = logging.getLogger("seo_generator")
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1200
 
-YOUTUBE_TITLE_MAX   = 50    # Shorter titles perform better in Shorts discovery
+YOUTUBE_TITLE_MAX   = 70    # YouTube truncates titles beyond this in search
 YOUTUBE_TAGS_MAX    = 10    # Stay within the 500-char total tags limit
 TIKTOK_CAPTION_MAX  = 150   # TikTok caption character limit
 INSTAGRAM_TAGS_MAX  = 30    # Instagram penalises >30 hashtags
@@ -94,24 +94,13 @@ been scripted and produced. You will receive the script and topic details.
 PLATFORM REQUIREMENTS
 
 YouTube:
-- title: Generate THREE title options (title_candidates array). Select the most
-  compelling one as "title". Each must be under 50 characters. Rules:
-    • Curiosity or emotion driven — make the viewer NEED to watch
-    • No colons or "Title: Subtitle" format
-    • No clickbait — must accurately reflect the content
-    • Examples: "Adobe forgot to encrypt passwords" / "The hacker who returned $611M"
-  If all 3 exceed 50 chars, truncate the best one at the nearest word boundary.
-  Do NOT add "| CipherPulse" suffix.
-- description: Use this exact structure (no prose intro — jump straight in):
-    Line 1: One punchy hook sentence about the topic (can reuse the hook_line or rephrase).
-    Line 2: One sentence of context with relevant SEO keywords worked in naturally
-            (e.g. "cybersecurity breach", "data leak", "hacking explained", "zero-day exploit").
-    Line 3: One sentence on why this matters to everyday people.
-    Line 4: (blank)
-    Line 5: Follow @CipherPulse for daily cyber threat breakdowns.
-    Line 6: (blank)
-    Line 7: Hashtags — always include #cybersecurity #hacking #dataleaks #shorts #cipherpulse,
-            plus 3-5 topic-specific ones. DO NOT exceed 10 hashtags total. All on one line.
+- title: Curiosity-driven hook under 70 characters. Front-load the most
+  compelling keyword. No clickbait — the title must accurately reflect content.
+  Do NOT add "| CipherPulse" suffix — the channel name is auto-appended.
+- description: 150-200 words. First two lines must contain primary keywords
+  (this is what Google indexes before "Show more"). Include a brief what-you'll-
+  learn paragraph, 2-3 bullet points of key facts covered, and end with a CTA.
+  Finish with a hashtag line: #Cybersecurity #Hacking #AI #Tech #Shorts
 - tags: 8-10 keyword tags. Mix broad (#cybersecurity) and specific (#pegasusspyware).
   Lowercase, no spaces inside tags, max 10 tags total. Return as JSON array.
 
@@ -132,8 +121,7 @@ Respond with ONLY a JSON code block — no prose before or after:
 ```json
 {
   "youtube": {
-    "title": "best option ≤50 chars",
-    "title_candidates": ["option 1", "option 2", "option 3"],
+    "title": "...",
     "description": "...",
     "tags": ["tag1", "tag2"]
   },
@@ -147,7 +135,7 @@ Respond with ONLY a JSON code block — no prose before or after:
 ```
 
 Validate before responding:
-- YouTube title ≤ 50 characters
+- YouTube title ≤ 70 characters
 - TikTok caption ≤ 150 characters
 - Instagram caption has exactly 30 hashtags
 - All text is original — never copy the script verbatim

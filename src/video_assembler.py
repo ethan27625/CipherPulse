@@ -296,7 +296,6 @@ def _build_filter_complex(
             f"eq=brightness={COLOR_BRIGHTNESS}:contrast={COLOR_CONTRAST},"
             f"colorbalance=rs={COLOR_RS}:gs={COLOR_GS}:bs={COLOR_BS},"
             f"vignette=angle={VIGNETTE_ANGLE},"
-            f"curves=all='0/0 0.5/0.4 1/0.8',"
             f"format=yuv420p"
             f"[v{i}]"
         )
@@ -316,9 +315,7 @@ def _build_filter_complex(
     )
 
     # ── Text overlays via drawtext ─────────────────────────────────────────
-    # Two overlays chained after subtitles:
-    #   1. CP watermark — always shown, top-left, 50% opacity
-    #   2. CTA footer   — last 3 s, bottom 10%, light-gray centered text
+    # CTA footer — last 3 s, bottom 10%, light-gray centered text
     bebas_path  = FONTS_DIR / "BebasNeue-Regular.ttf"
     oswald_path = FONTS_DIR / "Oswald-Variable.ttf"
     if bebas_path.exists():
@@ -332,15 +329,6 @@ def _build_filter_complex(
         return f"fontfile='{f}':" if f else ""
 
     dt_parts: list[str] = []
-
-    # CP watermark — permanent, top-left
-    dt_parts.append(
-        f"drawtext={_dt_font(ov_font)}"
-        f"text='CP':"
-        f"fontsize=20:"
-        f"fontcolor=white@0.50:"
-        f"x=20:y=20"
-    )
 
     # CTA — shown for the last 3 s, centered, bottom 10%
     cta_start = max(0.0, voice_duration - 3.0)
