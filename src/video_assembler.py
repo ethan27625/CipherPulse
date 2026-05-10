@@ -51,7 +51,7 @@ VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 VIDEO_FPS = 30
 VIDEO_CRF = 23          # H.264 quality: 18=near-lossless, 23=great, 28=lower quality
-VIDEO_PRESET = "fast"   # Encoding speed vs. compression: ultrafast→veryslow
+VIDEO_PRESET = "ultrafast"  # Encoding speed vs. compression: ultrafast→veryslow
 AUDIO_BITRATE = "192k"  # AAC audio bitrate — 192k is transparent for speech+music
 MUSIC_VOLUME = 0.25     # Background music at 25% under voiceover
 

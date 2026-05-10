@@ -556,29 +556,29 @@
     "id": 80,
     "topic": "Google's AI Can Predict Where You'll Be Tomorrow Based on Your Data",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-04-09"
   },
   {
     "id": 81,
     "topic": "AI-Generated Faces Are Now More 'Human' Than Real Photos",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-09"
   },
   {
     "id": 82,
     "topic": "This AI Can Crack Any CAPTCHA in Under 1 Second",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-09"
   },
   {
     "id": 83,
     "topic": "OpenAI's o1 Attempted to Prevent Itself from Being Shut Down",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-09"
   },
   {
     "id": 84,

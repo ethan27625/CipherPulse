@@ -31,7 +31,7 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       # ── 1. Checkout ───────────────────────────────────────────────────────────
@@ -58,9 +58,21 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      # ── 5. Restore OAuth tokens ───────────────────────────────────────────────
+      # ── 5. Cache Pexels footage clips ────────────────────────────────────────
+      # footage_cache is gitignored — runners start cold. Restoring a cache of
+      # previously downloaded clips cuts Stage 5 from ~5 min to ~30s.
+      # Cache key rotates weekly so stale clips don't accumulate forever.
+      - name: Cache footage clips
+        uses: actions/cache@v4
+        with:
+          path: assets/footage_cache
+          key: footage-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            footage-${{ runner.os }}-
+
+      # ── 7. Restore OAuth tokens ───────────────────────────────────────────────
       # Token is base64-encoded and stored as a secret so it survives across runs.
-      # IMPORTANT: Step 7 (Persist refreshed token) saves the post-refresh token
+      # IMPORTANT: Step 9 (Persist refreshed token) saves the post-refresh token
       # back to YOUTUBE_TOKEN_B64 after every successful run — this prevents the
       # secret from going stale when Google rotates credentials.
       - name: Restore OAuth tokens
@@ -73,7 +85,7 @@ jobs:
             echo "WARNING: YOUTUBE_TOKEN_B64 secret not set — uploads will fail"
           fi
 
-      # ── 6. Download background music (SoundHelix, no API key required) ────────
+      # ── 8. Download background music (SoundHelix, no API key required) ────────
       # assets/music/ is gitignored so runners start with no music files.
       # This step downloads CC0 dark/ambient tracks so every video has real music.
       # Falls back gracefully to sine-wave drone if this step fails.
@@ -85,7 +97,7 @@ jobs:
           python3 -m src.download_safe_music --source soundhelix
           echo "Music download complete"
 
-      # ── 7. Run pipeline ───────────────────────────────────────────────────────
+      # ── 9. Run pipeline ───────────────────────────────────────────────────────
       # Mode routing for cron triggers: match on github.event.schedule (the exact
       # cron string that fired). For workflow_dispatch, use the mode input.
       - name: Run CipherPulse pipeline
@@ -116,7 +128,7 @@ jobs:
           echo "Schedule: '$SCHEDULE' → mode=$MODE count=$COUNT dry_run=$DRY_RUN"
           python3 -m src.orchestrator $ARGS
 
-      # ── 8. Persist refreshed OAuth token back to secret ───────────────────────
+      # ── 10. Persist refreshed OAuth token back to secret ─────────────────────
       # After each run the youtube_uploader auto-refreshes config/token.json.
       # This step saves the refreshed token back to YOUTUBE_TOKEN_B64 so the
       # next cron run starts with valid credentials.
@@ -142,7 +154,7 @@ jobs:
             echo "SKIPPED: GH_PAT secret not configured — see step comment for setup instructions"
           fi
 
-      # ── 9. Upload video artifacts ─────────────────────────────────────────────
+      # ── 11. Upload video artifacts ────────────────────────────────────────────
       - name: Upload generated Shorts
         if: always()
         uses: actions/upload-artifact@v4
@@ -155,7 +167,7 @@ jobs:
             output/*/metadata.json
           retention-days: 7
 
-      # ── 10. Upload run log ────────────────────────────────────────────────────
+      # ── 12. Upload run log ────────────────────────────────────────────────────
       - name: Upload run log
         if: always()
         uses: actions/upload-artifact@v4

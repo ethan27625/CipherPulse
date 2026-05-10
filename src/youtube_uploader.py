@@ -167,8 +167,19 @@ def get_authenticated_service():
 
     # Step 3: First-run OAuth2 flow
     if not creds or not creds.valid:
-        import socket
+        import os, socket
         OAUTH_PORT = 8080
+
+        # In CI (GitHub Actions sets CI=true) there is no browser or user — fail fast
+        # instead of hanging on run_local_server() waiting for a callback that never comes.
+        # Fix: re-authenticate locally then update the YOUTUBE_TOKEN_B64 secret.
+        if os.environ.get("CI") == "true":
+            raise RuntimeError(
+                "YouTube OAuth token is invalid or expired (invalid_grant). "
+                "On your local machine run: python3 -m src.youtube_uploader --auth-only "
+                "then update the YOUTUBE_TOKEN_B64 GitHub secret with the new token: "
+                "base64 -w 0 config/token.json"
+            )
 
         client_config = _build_client_config()
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
