@@ -1,7 +1,7 @@
 {
   "meta": {
     "current_category_index": 1,
-    "topics_in_current_batch": 2,
+    "topics_in_current_batch": 3,
     "batch_size": 4
   },
   "categories": [
@@ -176,7 +176,7 @@
             "cybersecurity software",
             "network scanning"
           ],
-          "completed": false
+          "completed": true
         },
         {
           "id": "kali-004",
