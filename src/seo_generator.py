@@ -302,11 +302,25 @@ def _extract_json_block(raw: str) -> dict:
 
     try:
         return json.loads(json_str)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Could not parse JSON from Claude response: {e}\n"
-            f"Raw response (first 500 chars): {raw[:500]}"
-        )
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: json-repair handles common LLM JSON issues (unescaped newlines
+    # in strings, trailing commas, truncated output, shell commands with
+    # backslashes, etc.)
+    try:
+        from json_repair import repair_json
+        repaired = repair_json(json_str, return_objects=True)
+        if isinstance(repaired, dict) and repaired:
+            log.warning("SEO JSON was malformed — repaired automatically")
+            return repaired
+    except Exception:
+        pass
+
+    raise ValueError(
+        f"Could not parse JSON from Claude response (repair also failed)\n"
+        f"Raw response (first 500 chars): {raw[:500]}"
+    )
 
 
 def _validate_and_clamp(data: dict) -> dict:

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "current_category_index": 1,
-    "topics_in_current_batch": 3,
+    "current_category_index": 2,
+    "topics_in_current_batch": 1,
     "batch_size": 4
   },
   "categories": [
@@ -191,7 +191,7 @@
             "ip addresses screen",
             "terminal command running"
           ],
-          "completed": false
+          "completed": true
         },
         {
           "id": "kali-005",
@@ -271,7 +271,7 @@
             "internet infrastructure",
             "data center servers"
           ],
-          "completed": false
+          "completed": true
         },
         {
           "id": "net-002",

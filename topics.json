@@ -626,15 +626,15 @@
     "id": 90,
     "topic": "AI Can Now Jailbreak Itself Without Human Prompting",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-25"
   },
   {
     "id": 91,
     "topic": "This AI Predicts Your Health Conditions From a 30-Second Voice Sample",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-25"
   },
   {
     "id": 92,
