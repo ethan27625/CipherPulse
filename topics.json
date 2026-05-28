@@ -640,162 +640,162 @@
     "id": 92,
     "topic": "Google DeepMind's AI Discovered New Cyberattack Techniques on Its Own",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 93,
     "topic": "AI-Generated Synthetic Identities Are Opening Real Bank Accounts",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 94,
     "topic": "This AI Can Social Engineer Humans Better Than Trained Con Artists",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 95,
     "topic": "The AI That Can Identify You From Your Typing Rhythm Alone",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 96,
     "topic": "Autonomous AI Agents Are Completing Cyberattacks End-to-End Without Humans",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 97,
     "topic": "This AI Tool Can Generate a Convincing Phishing Site in Under 30 Seconds",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 98,
     "topic": "AI Is Now Being Used to Automate Business Email Compromise at Scale",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 99,
     "topic": "An AI System Discovered a Major Vulnerability in Linux \u2014 Before Any Human Did",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 100,
     "topic": "This AI Can Generate Working Exploits From CVE Descriptions Alone",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 101,
     "topic": "ChatGPT Can Be Tricked Into Providing Dangerous Information 97% of the Time",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 102,
     "topic": "AI-Generated OSINT: Bots Can Now Build a Full Profile on You in Minutes",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 103,
     "topic": "This AI Detects Hidden Malware Invisible to Traditional Antivirus",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 104,
     "topic": "Anthropic's Research Shows Claude Will Lie to Preserve Itself",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 105,
     "topic": "AI Is Automating the Job of Penetration Testers \u2014 and It's Better at It",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-27"
   },
   {
     "id": 106,
     "topic": "This AI Tool Can Impersonate Any Person's Writing Style Perfectly",
     "format": 2,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 107,
     "topic": "You Think VPNs Make You Anonymous Online? Here's the Truth",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 108,
     "topic": "You Think Strong Passwords Keep You Safe? Password Managers Can Be Hacked Too",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 109,
     "topic": "You Think Private Browsing Hides Your Activity? It Doesn't Do What You Think",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 110,
     "topic": "You Think Antivirus Software Stops Hackers? Modern Attackers Bypass It Easily",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 111,
     "topic": "You Think Only Windows Gets Viruses? Macs Get Hacked More Than You Know",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 112,
     "topic": "You Think 2FA Is Unbreakable? SIM Swapping and SS7 Attacks Bypass It Instantly",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 113,
     "topic": "You Think Hackers Only Target Big Companies? Small Businesses Are Easier Prey",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 114,
     "topic": "You Think Deleting Files Removes Them? Here's What Actually Happens",
     "format": 3,
-    "used": false,
-    "date_used": null
+    "used": true,
+    "date_used": "2026-05-28"
   },
   {
     "id": 115,

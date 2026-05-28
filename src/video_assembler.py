@@ -552,6 +552,77 @@ def assemble_video(
     return output_path
 
 
+# ── Remotion audio bake ───────────────────────────────────────────────────────
+
+def assemble_remotion_audio(
+    remotion_video_path: Path,
+    voiceover_path: Path,
+    output_dir: Path,
+    music_track: Optional[Path] = None,
+) -> Path:
+    """Bake voiceover (and optional music) into a Remotion-rendered silent MP4.
+
+    Remotion renders a silent visual-only MP4. This function mixes in:
+      - The TTS voiceover at full volume
+      - An optional background music track at MUSIC_VOLUME (25%)
+
+    The result is written to output_dir/video.mp4 (the canonical output path
+    expected by the orchestrator and uploader).
+
+    Args:
+        remotion_video_path: Silent MP4 produced by remotion_generator.render_remotion_video().
+        voiceover_path:      Voiceover MP3 from voice_generator.
+        output_dir:          Directory to write the final video.mp4.
+        music_track:         Optional music file (MP3/OGG) to mix at MUSIC_VOLUME.
+
+    Returns:
+        Path to the final video.mp4.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "video.mp4"
+
+    voice_duration = _get_video_duration(voiceover_path)
+
+    # Build FFmpeg command
+    cmd: list[str] = ["ffmpeg", "-y"]
+    cmd += ["-i", str(remotion_video_path)]   # input 0: video
+    cmd += ["-i", str(voiceover_path)]         # input 1: voiceover
+
+    if music_track and music_track.exists():
+        cmd += ["-stream_loop", "-1", "-i", str(music_track)]  # input 2: music (looped)
+        audio_filter = (
+            f"[1:a]volume=1.0[voice];"
+            f"[2:a]volume={MUSIC_VOLUME}[music];"
+            f"[voice][music]amix=inputs=2:duration=first:dropout_transition=2[aout]"
+        )
+        cmd += ["-filter_complex", audio_filter, "-map", "0:v", "-map", "[aout]"]
+    else:
+        cmd += ["-map", "0:v", "-map", "1:a"]
+
+    cmd += [
+        "-c:v", "libx264",
+        "-preset", VIDEO_PRESET,
+        "-crf", str(VIDEO_CRF),
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", AUDIO_BITRATE,
+        "-t", str(voice_duration),
+        "-movflags", "+faststart",
+        str(output_path),
+    ]
+
+    log.info("Baking audio into Remotion video → %s", output_path)
+    _run_ffmpeg(cmd)
+
+    if not output_path.exists() or output_path.stat().st_size == 0:
+        raise RuntimeError(f"Audio bake failed — output missing: {output_path}")
+
+    size_mb = output_path.stat().st_size / 1e6
+    real_dur = _get_video_duration(output_path)
+    log.info("Remotion video ready: %s (%.1f MB, %.1fs)", output_path.name, size_mb, real_dur)
+    return output_path
+
+
 # ── CLI entrypoint ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

@@ -355,6 +355,14 @@ In JSX/TSX, SVG attributes are camelCase:
 - ICONS MUST NEVER COVER TEXT BOXES: When a scene contains a text container (terminal window, code block, card, or any box with readable text), emoji icons must be placed OUTSIDE that container — either fully above it, fully below it, or to the sides with clear separation. Icons must never be positioned on top of, overlapping, or partially covering any text container or its contents. If there is not enough room to place icons without overlapping a text box, reduce the number of icons or omit them entirely.
 """
 
+# ── Edu-mode extra rules (appended to _SYSTEM only for --mode edu) ─────────────
+# DO NOT add these to _SYSTEM — they must not affect the news pipeline.
+_EDU_EXTRA_RULES = """
+EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
+- Caption/subtitle text at the bottom of the screen must use font-size 28px maximum. Never larger. This overrides the 32px rule above.
+- COMPARISON CARD LAYOUT: When showing two side-by-side cards (e.g. TCP vs UDP), both cards must fit fully within the screen. Left card: x=60 to x=500. Right card: x=540 to x=980. Cards must never extend past x=0 on the left or x=1080 on the right. Each card max width is 440px. All text inside cards must word-wrap within the card bounds.
+"""
+
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
@@ -363,6 +371,7 @@ def generate_custom_scenes(
     script_text: str,
     title: str,
     api_key: Optional[str] = None,
+    mode: str = "news",
 ) -> None:
     """Generate custom Remotion TSX components for each scene.
 
@@ -379,6 +388,8 @@ def generate_custom_scenes(
         script_text: Full voiceover script for narrative context.
         title:       Video title.
         api_key:     ANTHROPIC_API_KEY override (defaults to env var).
+        mode:        "news" (default) or "edu". Edu mode appends extra layout
+                     overrides (28px caption cap, comparison card bounds).
     """
     resolved_key = api_key or os.getenv("ANTHROPIC_API_KEY")
     if not resolved_key:
@@ -396,7 +407,7 @@ def generate_custom_scenes(
         caption  = scene.get("caption", "")
         log.info("[scene_director] Scene %d/%d → %r", i + 1, len(scenes), caption[:60])
         try:
-            tsx = _generate_component(client, scene, i, script_text, title)
+            tsx = _generate_component(client, scene, i, script_text, title, mode=mode)
             valid, reason = _sanity_check(tsx, i)
             if not valid:
                 log.warning("[scene_director] Scene %d sanity check failed (%s) — template fallback", i, reason)
@@ -442,6 +453,7 @@ def _generate_component(
     index: int,
     script_text: str,
     title: str,
+    mode: str = "news",
 ) -> str:
     """Call Haiku and return the raw TSX component code for one scene."""
     duration     = float(scene.get("duration_seconds", 5))
@@ -480,10 +492,12 @@ Animate what "{caption}" means visually. Choose the approach that best fits:
 
 Write GeneratedScene{index}. Output only TypeScript code."""
 
+    system_prompt = _SYSTEM + _EDU_EXTRA_RULES if mode == "edu" else _SYSTEM
+
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=_SYSTEM,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_msg}],
     )
     raw = response.content[0].text.strip()

@@ -1,0 +1,24 @@
+{
+  "name": "cipherpulse-remotion",
+  "version": "1.0.0",
+  "description": "Remotion video compositions for CipherPulse",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "remotion render CipherPulse",
+    "studio": "remotion studio"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.468",
+    "remotion": "4.0.468",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "5.5.4"
+  },
+  "remotion": {
+    "entryPoint": "./src/index.ts"
+  }
+}

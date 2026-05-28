@@ -14,6 +14,7 @@ Cost: ~$0.025 per script at claude-sonnet-4-20250514 pricing (~$3/month at 3/day
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -232,6 +233,19 @@ EST_WORDS: <integer word count of the full script>
 
 # ── Data structures ────────────────────────────────────────────────────────────
 
+SCENE_TYPES = ["CyberGrid", "DataStream", "BreachAlert", "TerminalRain", "CityScan", "PulseWave"]
+
+@dataclass
+class SceneDescription:
+    """One animated Remotion scene that corresponds to a segment of the script."""
+    id: str
+    type: str            # One of SCENE_TYPES
+    caption: str         # 5-8 words displayed on screen during this scene
+    duration_seconds: float
+    accent_color: str = "#00F2EA"
+    keyword: str = ""    # Optional large keyword for BreachAlert scenes
+
+
 @dataclass
 class Script:
     """A fully parsed CipherPulse video script ready for downstream processing."""
@@ -246,6 +260,7 @@ class Script:
     est_words: int
     est_duration_seconds: float
     news_context: Optional[str] = None  # Set for format-6 News React scripts
+    scenes: Optional[list[SceneDescription]] = None  # Set when visual_engine="remotion"
     raw_response: str = field(default="", repr=False)  # Full Claude response
 
     def is_valid_duration(self) -> bool:
@@ -553,6 +568,115 @@ def _call_claude(
     return response.content[0].text
 
 
+# ── Scene generation for Remotion ─────────────────────────────────────────────
+
+_SCENE_GEN_SYSTEM = """\
+You map a CipherPulse video script to animated scene descriptions for Remotion.
+Output a JSON array only — no explanation, no markdown fences.
+
+Each element:
+  {
+    "id": "scene-N",
+    "type": "<one of: CyberGrid DataStream BreachAlert TerminalRain CityScan PulseWave>",
+    "caption": "<5-8 word on-screen text for this moment>",
+    "duration_seconds": <float, must sum to total_seconds>,
+    "accent_color": "<#hex — use #00F2EA cyan default, #FF3B3B red for BreachAlert>",
+    "keyword": "<optional 1-2 ALL CAPS word for BreachAlert overlays>"
+  }
+
+Scene type guide:
+- CyberGrid: abstract grid + scan — good for openers and data topics
+- DataStream: matrix rain — best for breach/hacking moments
+- BreachAlert: red alert UI — use for the most dramatic reveal sentence
+- TerminalRain: scrolling commands — good for technical how-it-works sections
+- CityScan: network map — good for global/infrastructure topics
+- PulseWave: EQ wave — good for closers / calls to action
+
+Rules:
+- 5-8 scenes total. Each caption is a condensed version of that script sentence.
+- duration_seconds MUST sum to exactly total_seconds (given in user message).
+- Use BreachAlert exactly once (the most dramatic sentence).
+- Vary scene types — no two consecutive identical types.
+- accent_color is #00F2EA for most scenes; #FF3B3B for BreachAlert; #00BCD4 for CityScan.
+"""
+
+
+def _generate_scenes(
+    script: Script,
+    total_seconds: float,
+    api_key: str,
+) -> list[SceneDescription]:
+    """Call claude-haiku to generate Remotion scene descriptions for the given script."""
+    client = anthropic.Anthropic(api_key=api_key)
+    user_msg = (
+        f"Script text:\n{script.full_text}\n\n"
+        f"total_seconds: {total_seconds:.1f}\n\n"
+        "Output the JSON array of scenes."
+    )
+    try:
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=800,
+            system=_SCENE_GEN_SYSTEM,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        raw = resp.content[0].text.strip()
+        # Strip any accidental markdown fences
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+        data = json.loads(raw)
+    except Exception as exc:
+        log.warning("Scene generation failed (%s) — using fallback scenes", exc)
+        return _fallback_scenes(script, total_seconds)
+
+    scenes: list[SceneDescription] = []
+    for item in data:
+        try:
+            scenes.append(SceneDescription(
+                id=item["id"],
+                type=item["type"] if item["type"] in SCENE_TYPES else "CyberGrid",
+                caption=item["caption"],
+                duration_seconds=float(item["duration_seconds"]),
+                accent_color=item.get("accent_color", "#00F2EA"),
+                keyword=item.get("keyword", ""),
+            ))
+        except (KeyError, TypeError, ValueError) as exc:
+            log.warning("Skipping malformed scene item: %s — %s", item, exc)
+
+    if not scenes:
+        return _fallback_scenes(script, total_seconds)
+
+    # Normalise durations to exactly total_seconds
+    actual = sum(s.duration_seconds for s in scenes)
+    if actual > 0 and abs(actual - total_seconds) > 0.5:
+        factor = total_seconds / actual
+        for s in scenes:
+            s.duration_seconds = round(s.duration_seconds * factor, 2)
+
+    log.info("Generated %d Remotion scenes (%.1fs total)", len(scenes), sum(s.duration_seconds for s in scenes))
+    return scenes
+
+
+def _fallback_scenes(script: Script, total_seconds: float) -> list[SceneDescription]:
+    """Return a generic 6-scene layout when Haiku scene generation fails."""
+    import json as _json
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", script.full_text) if s.strip()]
+    types = ["CyberGrid", "DataStream", "BreachAlert", "TerminalRain", "CityScan", "PulseWave"]
+    n = min(len(sentences), 6)
+    dur = round(total_seconds / n, 2)
+    scenes = []
+    for i in range(n):
+        caption = " ".join(sentences[i].split()[:7])
+        scenes.append(SceneDescription(
+            id=f"scene-{i}",
+            type=types[i % len(types)],
+            caption=caption,
+            duration_seconds=dur,
+            accent_color="#FF3B3B" if types[i % len(types)] == "BreachAlert" else "#00F2EA",
+        ))
+    return scenes
+
+
 # ── Main public function ───────────────────────────────────────────────────────
 
 def generate_script(
@@ -561,6 +685,7 @@ def generate_script(
     news_context: Optional[str] = None,
     api_key: Optional[str] = None,
     mode: str = "news",
+    visual_engine: str = "pexels",
 ) -> Script:
     """
     Generate a CipherPulse video script for the given topic.
@@ -571,8 +696,10 @@ def generate_script(
         news_context: For format-6 only — formatted headline string from news_fetcher.
                       Never used in edu mode.
         api_key:      Override for ANTHROPIC_API_KEY env var (optional)
-        mode:         "news" (default) or "edu". Selects system prompt and duration limits.
-                      edu scripts target 60-80 words (~33-44s); news targets 80-100 words (~44-55s).
+        mode:          "news" (default) or "edu". Selects system prompt and duration limits.
+                       edu scripts target 60-80 words (~33-44s); news targets 80-100 words (~44-55s).
+        visual_engine: "pexels" (default) or "remotion". When "remotion", a second Haiku
+                       call generates SceneDescription objects stored in Script.scenes.
 
     Returns:
         Script dataclass with all parsed fields populated.
@@ -679,6 +806,11 @@ Create an original, engaging script about this topic following all format rules.
 
     # Accept the last attempt even if duration is slightly off —
     # voice_generator will measure the real audio duration as a final check.
+
+    if visual_engine == "remotion" and script is not None:
+        log.info("Generating Remotion scene descriptions via Haiku...")
+        script.scenes = _generate_scenes(script, script.est_duration_seconds, resolved_key)
+
     return script
 
 

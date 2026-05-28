@@ -40,6 +40,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,6 +52,9 @@ log = logging.getLogger(__name__)
 OUTPUT_ROOT  = Path("output")
 RUN_LOG_PATH = OUTPUT_ROOT / "run_log.json"
 QUEUE_PATH   = Path("config/schedule_queue.json")
+
+# Visual engine: "pexels" (default) or "remotion"
+VISUAL_ENGINE = os.environ.get("VISUAL_ENGINE", "pexels").lower()
 
 # Safe Pexels search terms for text-card format — ignores AI-generated visual_tags
 # to guarantee consistently dark/on-brand imagery.
@@ -200,6 +205,7 @@ def run_pipeline(
                 format_id=topic.format,
                 news_context=news_context if topic.format == 6 else None,
                 mode=mode,
+                visual_engine=VISUAL_ENGINE,
             )
             (out_dir / "script.txt").write_text(script.to_file_content())
             record["script"] = {
@@ -255,24 +261,45 @@ def run_pipeline(
                         "Regenerate with a shorter script."
                     )
 
-        # ── Stage 5: Footage ───────────────────────────────────────────────────
-        log.info("Stage 5/12 — Downloading footage clips…")
-        import random as _random
-        from src.footage_downloader import fetch_clips_for_script
-        clip_target = 3 if is_text_card else 10
-        # Text card uses a hardcoded safe list so imagery is always dark/on-brand,
-        # regardless of what visual_tags the script writer generated.
-        clip_tags = (
-            _random.sample(TEXT_CARD_IMAGE_TERMS, min(3, len(TEXT_CARD_IMAGE_TERMS)))
-            if is_text_card
-            else content_visual_tags
-        )
-        clips = fetch_clips_for_script(
-            visual_tags=clip_tags,
-            target_clips=clip_target,
-        )
-        record["footage"] = {"clip_count": len(clips), "paths": [str(c) for c in clips]}
-        log.info(f"  Footage: {len(clips)} clips")
+        # ── Stage 5: Footage / Remotion scenes ────────────────────────────────
+        if is_text_card:
+            log.info("Stage 5/12 — Downloading text card image clip…")
+            import random as _random
+            from src.footage_downloader import fetch_clips_for_script
+            clip_tags = _random.sample(TEXT_CARD_IMAGE_TERMS, min(3, len(TEXT_CARD_IMAGE_TERMS)))
+            clips = fetch_clips_for_script(visual_tags=clip_tags, target_clips=3)
+            record["footage"] = {"clip_count": len(clips), "paths": [str(c) for c in clips]}
+            log.info(f"  Footage: {len(clips)} clips (text card)")
+
+        elif VISUAL_ENGINE == "remotion":
+            log.info("Stage 5/12 — Preparing Remotion scene data (no Pexels download)…")
+            clips = []  # Remotion needs no footage clips
+            scenes = script.scenes or []
+            record["footage"] = {"engine": "remotion", "scene_count": len(scenes)}
+            log.info(f"  Remotion: {len(scenes)} scenes queued for render")
+
+            # Generate per-scene custom TSX components via Claude Haiku.
+            # Writes remotion-video/src/scenes/generated/AllGeneratedScenes.tsx
+            # before the render so Remotion bundles the fresh code.
+            from src.scene_director import generate_custom_scenes
+            generate_custom_scenes(
+                scenes=[vars(s) for s in scenes],
+                script_text=script.full_text,
+                title=script.title,
+                api_key=os.getenv("ANTHROPIC_API_KEY"),
+                mode=mode,
+            )
+
+        else:
+            log.info("Stage 5/12 — Downloading footage clips…")
+            import random as _random
+            from src.footage_downloader import fetch_clips_for_script
+            clips = fetch_clips_for_script(
+                visual_tags=content_visual_tags,
+                target_clips=10,
+            )
+            record["footage"] = {"clip_count": len(clips), "paths": [str(c) for c in clips]}
+            log.info(f"  Footage: {len(clips)} clips")
 
         # ── Stage 6: Video assembly ────────────────────────────────────────────
         if is_text_card:
@@ -284,6 +311,27 @@ def run_pipeline(
                 output_dir=out_dir,
                 hook_line=tc.hook_line,
             )
+
+        elif VISUAL_ENGINE == "remotion":
+            log.info("Stage 6/12 — Rendering Remotion composition…")
+            from src.remotion_generator import render_remotion_video
+            from src.video_assembler import assemble_remotion_audio, _pick_music_track
+
+            music_track = _pick_music_track()
+            silent_video = render_remotion_video(
+                scenes=[vars(s) for s in scenes],
+                title=script.title,
+                hook=script.hook,
+                output_dir=out_dir,
+                music_track=music_track,
+            )
+            video_path = assemble_remotion_audio(
+                remotion_video_path=silent_video,
+                voiceover_path=voice.mp3_path,
+                output_dir=out_dir,
+                music_track=music_track,
+            )
+
         else:
             log.info("Stage 6/12 — Assembling voiceover video with FFmpeg…")
             from src.video_assembler import assemble_video
@@ -293,6 +341,7 @@ def run_pipeline(
                 srt_path=voice.subtitle_path,
                 output_dir=out_dir,
             )
+
         record["video"] = {"path": str(video_path), "size_mb": video_path.stat().st_size / 1e6}
         log.info(f"  Video: {record['video']['size_mb']:.1f} MB → {video_path}")
 
