@@ -68,6 +68,8 @@ log = logging.getLogger("seo_generator")
 # ── Constants ─────────────────────────────────────────────────────────────────
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1200
+RESOURCE_EXTRACTION_MODEL = "claude-sonnet-4-5"  # Model for edu tool/resource extraction
+MAX_RESOURCES = 6            # Cap on entries in the Tools & Resources section
 
 YOUTUBE_TITLE_MAX   = 70    # YouTube truncates titles beyond this in search
 YOUTUBE_TAGS_MAX    = 10    # Stay within the 500-char total tags limit
@@ -239,6 +241,7 @@ def _detect_tools(script_text: str) -> list[str]:
 
     Matching is case-insensitive.  Results are returned in the order they first
     appear in the script so the section reads naturally.
+    Used as the final fallback when Claude API extraction fails completely.
     """
     text_lower = script_text.lower()
     seen: list[str] = []
@@ -248,13 +251,130 @@ def _detect_tools(script_text: str) -> list[str]:
     return seen
 
 
-def _build_tools_section(tools: list[str]) -> str:
-    """Format the Tools & Resources block appended to edu YouTube descriptions."""
+# ── Dynamic resource extraction (edu mode only) ───────────────────────────────
+
+_RESOURCE_EXTRACTION_SYSTEM = """\
+You are analyzing a cybersecurity/AI educational short script. Extract every tool, platform, framework, programming language, certification, technique, protocol, or named technology mentioned in the script that is a KEY teaching point (not just a passing reference). For each one, return: name, a 1-2 sentence beginner-friendly description of what it does and why it matters, and the official URL if you know it (use only well-known official URLs you are confident about — nmap.org, hackthebox.com, kali.org, etc. If you are not confident about a URL, omit the url field rather than guess).
+
+Return ONLY valid JSON in this exact format with no other text:
+{
+  "resources": [
+    {"name": "Tool Name", "description": "What it does and why it matters.", "url": "https://official-url.com"},
+    ...
+  ]
+}
+
+If no key teaching tools/technologies are mentioned, return {"resources": []}."""
+
+
+def _extract_resources_via_claude(
+    script_text: str,
+    client: anthropic.Anthropic,
+) -> list[dict]:
+    """Call Claude to dynamically extract key tools/technologies from the script.
+
+    Returns a list of resource dicts: {name, description, url (optional)}.
+    Returns [] on any error so the caller falls back to hardcoded detection.
+    Never raises — all failures are logged and swallowed.
+    """
+    try:
+        response = client.messages.create(
+            model=RESOURCE_EXTRACTION_MODEL,
+            max_tokens=800,
+            system=_RESOURCE_EXTRACTION_SYSTEM,
+            messages=[{
+                "role": "user",
+                "content": (
+                    "Extract key tools and technologies from this script:\n\n"
+                    + script_text
+                ),
+            }],
+        )
+        raw = response.content[0].text.strip()
+
+        # Strip accidental markdown fences
+        raw = re.sub(r"^```(?:json)?\s*\n?", "", raw)
+        raw = re.sub(r"\n?```\s*$", "", raw)
+        raw = raw.strip()
+
+        data = json.loads(raw)
+        resources = data.get("resources", [])
+        if not isinstance(resources, list):
+            log.warning("[edu] Resource extraction returned unexpected structure — ignoring")
+            return []
+
+        valid: list[dict] = []
+        for r in resources:
+            if isinstance(r, dict) and r.get("name") and r.get("description"):
+                entry: dict = {
+                    "name": str(r["name"]),
+                    "description": str(r["description"]),
+                }
+                if r.get("url"):
+                    entry["url"] = str(r["url"])
+                valid.append(entry)
+
+        log.info("[edu] Claude extracted %d resource(s) from script", len(valid))
+        return valid
+
+    except Exception as exc:
+        log.warning(
+            "[edu] Resource extraction via Claude failed: %s — falling back to hardcoded detection",
+            exc,
+        )
+        return []
+
+
+def _merge_resources(
+    claude_resources: list[dict],
+    script_text: str,
+) -> list[dict]:
+    """Merge Claude-extracted resources with the hardcoded TOOLS_RESOURCES dict.
+
+    Priority rules:
+    - For any tool that exists in TOOLS_RESOURCES, the hardcoded entry takes
+      precedence (more reliable URLs and descriptions).
+    - Claude-generated entries fill in tools not in the hardcoded dict.
+    - Any hardcoded tools Claude missed that appear in the script are appended.
+    - Final list is capped at MAX_RESOURCES entries.
+    """
+    merged: list[dict] = []
+    seen_lower: set[str] = set()
+
+    for r in claude_resources:
+        name = r["name"]
+        name_lower = name.lower()
+        if name_lower in seen_lower:
+            continue
+        # Prefer hardcoded entry when available
+        if name in TOOLS_RESOURCES:
+            entry = TOOLS_RESOURCES[name]
+            merged.append({"name": name, "description": entry["description"], "url": entry["url"]})
+        else:
+            merged.append(r)
+        seen_lower.add(name_lower)
+
+    # Append hardcoded tools Claude missed but that appear in the script
+    text_lower = script_text.lower()
+    for tool, entry in TOOLS_RESOURCES.items():
+        if tool.lower() in text_lower and tool.lower() not in seen_lower:
+            merged.append({"name": tool, "description": entry["description"], "url": entry["url"]})
+            seen_lower.add(tool.lower())
+
+    return merged[:MAX_RESOURCES]
+
+
+def _build_tools_section(resources: list[dict]) -> str:
+    """Format the Tools & Resources block appended to edu YouTube descriptions.
+
+    Accepts a list of resource dicts: {name, description, url (optional)}.
+    Entries without a url are rendered without the link line.
+    """
     lines = ["", "---", "🔧 Tools & Resources Mentioned:", ""]
-    for tool in tools:
-        entry = TOOLS_RESOURCES[tool]
-        lines.append(f"▸ {tool} - {entry['description']}")
-        lines.append(f"🔗 {entry['url']}")
+    for r in resources:
+        lines.append(f"▸ {r['name']} - {r['description']}")
+        if r.get("url"):
+            lines.append(f"🔗 {r['url']}")
         lines.append("")
     lines.append("---")
     return "\n".join(lines)
@@ -690,14 +810,23 @@ Return only the JSON block, nothing else.
 
     metadata = _parse_response(raw, topic, format_id)
 
-    # Edu-only: append a Tools & Resources section to the YouTube description
-    # whenever the script mentions known tools/platforms/certs.
+    # Edu-only: append a Tools & Resources section to the YouTube description.
+    # Step 1 — Dynamic extraction via Claude (catches tools not in hardcoded dict).
+    # Step 2 — Merge with hardcoded TOOLS_RESOURCES (hardcoded entries take precedence).
+    # Step 3 — Cap at MAX_RESOURCES and format the section.
+    # If the Claude API call fails, _extract_resources_via_claude returns [] and
+    # _merge_resources falls back to scanning the script against the hardcoded dict.
     # The news pipeline never reaches this branch (mode defaults to "news").
     if mode == "edu":
-        detected = _detect_tools(script_text)
-        if detected:
-            log.info(f"[edu] Detected tools in script: {detected}")
-            metadata.youtube.description += _build_tools_section(detected)
+        claude_resources = _extract_resources_via_claude(script_text, client)
+        resources = _merge_resources(claude_resources, script_text)
+        if resources:
+            log.info(
+                "[edu] Tools & Resources (%d): %s",
+                len(resources),
+                [r["name"] for r in resources],
+            )
+            metadata.youtube.description += _build_tools_section(resources)
 
     log.info(f"YouTube title ({len(metadata.youtube.title)} chars): {metadata.youtube.title}")
     # Log all three title candidates if present in raw response
