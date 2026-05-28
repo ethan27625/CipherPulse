@@ -83,6 +83,182 @@ FORMAT_NAMES: dict[int, str] = {
     6: "News React",
 }
 
+# ── Edu tools/resources registry (used only in edu mode) ─────────────────────
+# Maps canonical tool name → {description, url}.  Append to YouTube description
+# whenever the tool is mentioned in the script.  News pipeline never uses this.
+TOOLS_RESOURCES: dict[str, dict[str, str]] = {
+    "Nmap": {
+        "description": "Network discovery and security auditing tool used to map networks, find open ports, and detect running services.",
+        "url": "https://nmap.org",
+    },
+    "Wireshark": {
+        "description": "The world's most popular network protocol analyser — capture and inspect live traffic or pcap files.",
+        "url": "https://wireshark.org",
+    },
+    "Metasploit": {
+        "description": "Industry-standard penetration testing framework with hundreds of exploit modules for testing system vulnerabilities.",
+        "url": "https://metasploit.com",
+    },
+    "Burp Suite": {
+        "description": "Web application security testing platform used by professionals to find vulnerabilities in web apps and APIs.",
+        "url": "https://portswigger.net/burp",
+    },
+    "Nikto": {
+        "description": "Open-source web server scanner that checks for dangerous files, outdated software, and common misconfigurations.",
+        "url": "https://cirt.net/Nikto2",
+    },
+    "Hydra": {
+        "description": "Fast and flexible online password-cracking tool supporting dozens of protocols including SSH, FTP, and HTTP.",
+        "url": "https://github.com/vanhauser-thc/thc-hydra",
+    },
+    "John the Ripper": {
+        "description": "Classic offline password cracker that supports hundreds of hash types and wordlist-based attacks.",
+        "url": "https://openwall.com/john",
+    },
+    "Hashcat": {
+        "description": "World's fastest GPU-accelerated password recovery tool, supporting over 300 hash algorithms.",
+        "url": "https://hashcat.net",
+    },
+    "Aircrack-ng": {
+        "description": "Complete suite for assessing Wi-Fi network security — captures packets, cracks WEP/WPA keys.",
+        "url": "https://aircrack-ng.org",
+    },
+    "SQLMap": {
+        "description": "Automated SQL injection detection and exploitation tool that can extract databases with a single command.",
+        "url": "https://sqlmap.org",
+    },
+    "Nessus": {
+        "description": "One of the most widely deployed vulnerability scanners, used to identify misconfigurations and missing patches.",
+        "url": "https://tenable.com/products/nessus",
+    },
+    "OpenVAS": {
+        "description": "Free, open-source vulnerability scanner and management solution — the open alternative to commercial scanners.",
+        "url": "https://openvas.org",
+    },
+    "Maltego": {
+        "description": "Visual link-analysis and OSINT platform for mapping relationships between people, domains, IPs, and organisations.",
+        "url": "https://maltego.com",
+    },
+    "Recon-ng": {
+        "description": "Full-featured web reconnaissance framework written in Python — modular OSINT data collection at scale.",
+        "url": "https://github.com/lanmaster53/recon-ng",
+    },
+    "Gobuster": {
+        "description": "Fast directory/file and DNS brute-forcing tool written in Go — finds hidden paths on web servers.",
+        "url": "https://github.com/OJ/gobuster",
+    },
+    "Dirb": {
+        "description": "Web content scanner that uses wordlists to brute-force directories and files on web servers.",
+        "url": "https://dirb.sourceforge.net",
+    },
+    "Netcat": {
+        "description": "The 'Swiss Army knife' of networking — reads and writes data across TCP/UDP connections for debugging and pivoting.",
+        "url": "https://netcat.sourceforge.net",
+    },
+    "tcpdump": {
+        "description": "Command-line packet analyser for capturing and filtering network traffic on any Unix-like system.",
+        "url": "https://tcpdump.org",
+    },
+    "Snort": {
+        "description": "Open-source intrusion detection and prevention system (IDS/IPS) that analyses network traffic in real time.",
+        "url": "https://snort.org",
+    },
+    "Suricata": {
+        "description": "High-performance open-source IDS/IPS/NSM engine that supports multi-threading and Lua scripting.",
+        "url": "https://suricata.io",
+    },
+    "OSSEC": {
+        "description": "Open-source host-based intrusion detection system (HIDS) with log analysis, rootkit detection, and alerting.",
+        "url": "https://ossec.net",
+    },
+    "Splunk": {
+        "description": "Leading SIEM platform for ingesting, searching, and visualising machine-generated log data at enterprise scale.",
+        "url": "https://splunk.com",
+    },
+    "ELK Stack": {
+        "description": "Open-source log management stack (Elasticsearch + Logstash + Kibana) used for SIEM and threat hunting.",
+        "url": "https://elastic.co/elastic-stack",
+    },
+    "Kali Linux": {
+        "description": "Debian-based Linux distribution pre-loaded with 600+ security and penetration testing tools.",
+        "url": "https://kali.org",
+    },
+    "Parrot OS": {
+        "description": "Security-focused Linux distro designed for ethical hacking, digital forensics, and privacy.",
+        "url": "https://parrotsec.org",
+    },
+    "HackTheBox": {
+        "description": "Online cybersecurity training platform with hands-on hacking labs and realistic CTF-style machines.",
+        "url": "https://hackthebox.com",
+    },
+    "TryHackMe": {
+        "description": "Beginner-friendly cybersecurity learning platform with guided rooms and browser-based virtual machines.",
+        "url": "https://tryhackme.com",
+    },
+    "OverTheWire": {
+        "description": "Free wargames site for learning security concepts through progressively harder command-line challenges.",
+        "url": "https://overthewire.org",
+    },
+    "PortSwigger Academy": {
+        "description": "Free web security training from the makers of Burp Suite — the gold standard for learning web app hacking.",
+        "url": "https://portswigger.net/web-security",
+    },
+    "PicoCTF": {
+        "description": "Free beginner-level CTF competition from Carnegie Mellon University — ideal first step into security challenges.",
+        "url": "https://picoctf.org",
+    },
+    "VulnHub": {
+        "description": "Repository of downloadable vulnerable virtual machines for offline practice of penetration testing skills.",
+        "url": "https://vulnhub.com",
+    },
+    "CompTIA Security+": {
+        "description": "Entry-level vendor-neutral security certification — the most widely adopted baseline cert for IT security roles.",
+        "url": "https://comptia.org/certifications/security",
+    },
+    "CEH": {
+        "description": "Certified Ethical Hacker — EC-Council's vendor-neutral certification for penetration testing methodology.",
+        "url": "https://eccouncil.org/train-certify/certified-ethical-hacker-ceh",
+    },
+    "OSCP": {
+        "description": "Offensive Security Certified Professional — the industry's most respected hands-on penetration testing certification.",
+        "url": "https://offsec.com/courses/pen-200",
+    },
+    "CISSP": {
+        "description": "Certified Information Systems Security Professional — the gold standard for senior security management roles.",
+        "url": "https://isc2.org/certifications/cissp",
+    },
+    "PNPT": {
+        "description": "Practical Network Penetration Tester — TCM Security's affordable, practical alternative to OSCP.",
+        "url": "https://certifications.tcm-sec.com/pnpt",
+    },
+}
+
+
+def _detect_tools(script_text: str) -> list[str]:
+    """Return tool names from TOOLS_RESOURCES that appear in script_text.
+
+    Matching is case-insensitive.  Results are returned in the order they first
+    appear in the script so the section reads naturally.
+    """
+    text_lower = script_text.lower()
+    seen: list[str] = []
+    for tool in TOOLS_RESOURCES:
+        if tool.lower() in text_lower and tool not in seen:
+            seen.append(tool)
+    return seen
+
+
+def _build_tools_section(tools: list[str]) -> str:
+    """Format the Tools & Resources block appended to edu YouTube descriptions."""
+    lines = ["", "---", "🔧 Tools & Resources Mentioned:", ""]
+    for tool in tools:
+        entry = TOOLS_RESOURCES[tool]
+        lines.append(f"▸ {tool} - {entry['description']}")
+        lines.append(f"🔗 {entry['url']}")
+        lines.append("")
+    lines.append("---")
+    return "\n".join(lines)
+
 # ── System prompt ─────────────────────────────────────────────────────────────
 SEO_SYSTEM_PROMPT = """\
 You are the SEO and social media manager for CipherPulse, a cybersecurity and
@@ -513,6 +689,15 @@ Return only the JSON block, nothing else.
         raise RuntimeError(f"SEO generation failed: {e}") from e
 
     metadata = _parse_response(raw, topic, format_id)
+
+    # Edu-only: append a Tools & Resources section to the YouTube description
+    # whenever the script mentions known tools/platforms/certs.
+    # The news pipeline never reaches this branch (mode defaults to "news").
+    if mode == "edu":
+        detected = _detect_tools(script_text)
+        if detected:
+            log.info(f"[edu] Detected tools in script: {detected}")
+            metadata.youtube.description += _build_tools_section(detected)
 
     log.info(f"YouTube title ({len(metadata.youtube.title)} chars): {metadata.youtube.title}")
     # Log all three title candidates if present in raw response
