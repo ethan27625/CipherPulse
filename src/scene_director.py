@@ -105,15 +105,15 @@ DO NOT use: Math.random() — it re-runs every frame and causes flickering.
 
 ━━━ CANVAS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1080 × 1920 px | 30 fps | portrait 9:16
-Usable width:  content x=60–800 (740px); text must stay left of x=920
-Usable height: y=220 to y=1600 (1380px of content height)
+Usable width:  60px margin each side → 960px of content width
+Usable height: y=150 to y=1750 (1600px of content height)
 
 ━━━ FRAME ZONES — place elements strictly within these bands ━━━━━━━━━━━━━━━━━━
-  TOP ZONE    y=220  – y=500   (280px) — title, keyword, counter number
+  TOP ZONE    y=150  – y=500   (350px) — title, keyword, counter number
   MIDDLE ZONE y=500  – y=1200  (700px) — main visual: icons, diagrams, bars, SVG
-  BOTTOM ZONE y=1200 – y=1600  (400px) — sub-labels, progress bars, caption
+  BOTTOM ZONE y=1200 – y=1750  (550px) — sub-labels, progress bars, caption
 
-  CAPTION is ALWAYS in the BOTTOM ZONE at top: 1300px (see below).
+  CAPTION is ALWAYS in the BOTTOM ZONE at top: 1350px (see below).
   Elements in one zone must NOT overlap into another zone.
   Leave at least 40px gap between any two elements.
 
@@ -131,20 +131,18 @@ Visual content must fill at least 60% of the 1080×1920 frame. The MIDDLE ZONE
 (700px tall, 960px wide) should be densely filled — no large empty black voids.
 
 ━━━ OPENING FRAME — no empty starts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Frame 0 must show visible animated content — at least 3 distinct animated elements
-visible from the very first frame. Do NOT wait until frame 10 or 20 to begin.
-Background glows, scan lines, grid overlays, counters, and icons must all appear
-from frame 0 so the screen is never blank.
-  - On the first scene especially, start 3+ visual elements (glow + counter + icons)
+Frame 0 must show visible animated content. Do NOT wait until frame 10 or 20 to
+begin rendering. Background glows, scan lines, grid overlays, or partial elements
+must be present from frame 0 so the screen is never blank.
   - Use interpolate(frame, [0, 20], ...) not [20, 40] for the first element
   - A subtle pulse or glow starting at frame 0 is always sufficient
 
 ━━━ CAPTION — fixed position, every scene ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Caption text (scene.caption) MUST be rendered with EXACTLY this style:
   position: "absolute"
-  top: 1300
+  top: 1350
   left: 60
-  right: 160
+  right: 60
   textAlign: "center"
   color: "#E8E6E3"
   fontSize: 52
@@ -153,14 +151,12 @@ Caption text (scene.caption) MUST be rendered with EXACTLY this style:
   textShadow: "0 2px 12px rgba(0,0,0,0.9)"
   margin: 0
 
-Never change top: 1300. Never use bottom: instead of top:. Never move the caption.
-right: 160 keeps text left of x=920 — YouTube's right-side buttons cover x=820–1080.
+Never change top: 1350. Never use bottom: instead of top:. Never move the caption.
 
 ━━━ LAYOUT — fill the frame, no clustering ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  - Distribute elements across the usable width (x=60 to x=800)
-  - For icon grids: use left values like 60, 250, 440, 630 (4 cols, 140px icons fit inside x=800)
-    or 60, 370, 680 (3 columns) — never cluster everything in the centre
-  - All icons/shapes must end before x=800; all text must end before x=920
+  - Distribute elements across the full 960px usable width
+  - For icon grids: use left values like 60, 280, 500, 720, 940 (5 columns)
+    or 60, 390, 720 (3 columns) — never cluster everything in the centre
   - Span at least 800px of vertical height with your content
   - No two elements should have overlapping bounding boxes (≥40px gap always)
 
@@ -180,9 +176,9 @@ export const GeneratedSceneN: React.FC<{ scene: SceneData }> = ({ scene }) => {
   // ...
   return (
     <AbsoluteFill style={{ background: "#060609", overflow: "hidden", fontFamily: "monospace" }}>
-      {/* TOP ZONE: title or counter (y=220-500) */}
+      {/* TOP ZONE: title or counter (y=150-500) */}
       {/* MIDDLE ZONE: main visual (y=500-1200) */}
-      {/* BOTTOM ZONE: caption at top:1300 (y=1200-1600) */}
+      {/* BOTTOM ZONE: caption at top:1350 (y=1200-1750) */}
     </AbsoluteFill>
   );
 };
@@ -192,7 +188,7 @@ export const GeneratedSceneN: React.FC<{ scene: SceneData }> = ({ scene }) => {
 2. Nothing static for more than 15 consecutive frames (0.5 s)
 3. Elements animate IN — no instant full-opacity pop (use fade or scale)
 4. Stagger element start frames: offset each by 8–20 frames
-5. scene.caption at top:1300, right:160, fontSize:52 — always present from ~frame 20
+5. scene.caption at top:1350, fontSize:52 — always present from ~frame 20
 6. At least 3 distinct animated elements in the MIDDLE ZONE
 7. At least one spring() for a satisfying bounce on the key reveal
 
@@ -287,8 +283,8 @@ export const GeneratedSceneExample: React.FC<{ scene: SceneData }> = ({ scene })
         borderRadius: "50%", background: `radial-gradient(circle, ${accent}18 0%, transparent 70%)`,
         opacity: bgGlow }} />
 
-      {/* TOP ZONE: large counter (y=220, within safe zone) */}
-      <div style={{ position: "absolute", top: 220, left: 0, right: 0, textAlign: "center" }}>
+      {/* TOP ZONE: large counter (y≈220) */}
+      <div style={{ position: "absolute", top: 200, left: 0, right: 0, textAlign: "center" }}>
         <div style={{ fontSize: 160, fontWeight: 900, color: accent,
           textShadow: `0 0 60px ${accent}`, opacity: countGlow, lineHeight: 1 }}>
           {count.toLocaleString()}
@@ -309,15 +305,15 @@ export const GeneratedSceneExample: React.FC<{ scene: SceneData }> = ({ scene })
         );
       })}
 
-      {/* BOTTOM ZONE: progress bar at y=1240 (60px above caption) */}
-      <div style={{ position: "absolute", top: 1240, left: 60, right: 160,
+      {/* BOTTOM ZONE: progress bar at y=1260 (90px above caption) */}
+      <div style={{ position: "absolute", top: 1260, left: 60, right: 60,
         height: 20, background: "#222", borderRadius: 10 }}>
         <div style={{ width: `${pct}%`, height: "100%", background: accent,
           borderRadius: 10, boxShadow: `0 0 12px ${accent}` }} />
       </div>
 
-      {/* CAPTION — fixed at top:1300, right:160 (text max x=920), never changes */}
-      <div style={{ position: "absolute", top: 1300, left: 60, right: 160,
+      {/* CAPTION — fixed at top:1350, never changes */}
+      <div style={{ position: "absolute", top: 1350, left: 60, right: 60,
         textAlign: "center", opacity: captionOpacity }}>
         <p style={{ color: "#E8E6E3", fontSize: 52, fontWeight: 900,
           lineHeight: 1.25, textShadow: "0 2px 12px rgba(0,0,0,0.9)", margin: 0 }}>
@@ -336,12 +332,15 @@ In JSX/TSX, SVG attributes are camelCase:
 - TypeScript strict — no `any` type
 - All data (labels, positions, colours) as const arrays BEFORE the return
 - Root element MUST use background: "#060609"
-- Caption MUST be at top:1300, right:160, fontSize:52, textShadow as shown — no exceptions
+- Caption MUST be at top:1350, fontSize:52, textShadow as shown — no exceptions
 - Minimum icon size 120px, minimum counter font 140px, minimum bar height 20px
-- Frame 0 must not be blank — start 3+ animated elements from frame 0 (glow, counter, icons)
+- Frame 0 must not be blank — start a glow or grid from frame 0
 - Keep component under 110 lines of code
 - Always close every JSX element you open — including </AbsoluteFill>
 - Output ONLY the TypeScript code — no markdown fences, no prose
+- Keep all text and visual elements within x=60 to x=820 to avoid YouTube's right-side UI buttons.
+- No content above y=220 to avoid YouTube's header.
+- All text must have 100px right margin. If text is too long, reduce font size or wrap — never let text go off screen.
 """
 
 
