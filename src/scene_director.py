@@ -360,13 +360,30 @@ In JSX/TSX, SVG attributes are camelCase:
 _EDU_EXTRA_RULES = """
 EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
 
-- CAPTION FONT SIZE — EXACT OVERRIDE: Caption/subtitle text at the bottom of the screen MUST use fontSize: 28 for EVERY scene, no exceptions. This OVERRIDES the "fontSize: 52" rule stated in HARD RULES and ANIMATION REQUIREMENTS above — do NOT use 52px for captions in edu mode. Never use a larger font size for captions even on short text. All captions across all scenes in a single video must be visually identical in size: exactly 28px, every time.
+- SYNCED WORD-BY-WORD CAPTIONS (REQUIRED — EVERY SCENE): Every edu scene MUST render scene.caption as an animated word-by-word reveal. This OVERRIDES the "fontSize: 52" and "top: 1350" caption rules from HARD RULES above. Use this exact pattern:
+
+  const words = scene.caption.split(" ");
+  const currentWord = Math.floor(
+    interpolate(frame, [0, totalFrames - 5], [0, words.length],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+  );
+
+  Render at top: 1500, left: 60, right: 60 as a flex row:
+  <div style={{ position: "absolute", top: 1500, left: 60, right: 60, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+    {words.map((word, i) => (
+      <span key={i} style={{ fontSize: 32, fontWeight: 900, fontFamily: "monospace", color: i === currentWord ? accent : "#E8E6E3", textShadow: "0 2px 8px rgba(0,0,0,0.9)" }}>{word}</span>
+    ))}
+  </div>
+
+  This is the ONLY caption element. Do NOT also add a plain <p>{scene.caption}</p> block anywhere.
+
+- NO SECONDARY DESCRIPTIVE TEXT: Do not add any secondary text labels that describe what is happening in the visuals (e.g. "Reconnaissance: casing before attack", "Social engineering finds weakest entry", or any sentence that paraphrases the scene topic). The synced word-by-word captions at top: 1500 are the only text at the bottom of the screen. Do not add any other explanation text near or overlapping the icons or visual area.
 
 - COMPARISON CARD LAYOUT: When showing two side-by-side cards (e.g. TCP vs UDP), both cards must fit fully within the screen. Left card: x=60 to x=500. Right card: x=540 to x=980. Cards must never extend past x=0 on the left or x=1080 on the right. Each card max width is 440px. All text inside cards must word-wrap within the card bounds.
 
 - STRICT NO-OVERLAP ENFORCEMENT: Every element must have at least 40px of clear vertical space between it and any other element. Specifically: stat counters and their labels (like '45%' + 'PENETRATION' or '0' + 'PORTS ENUMERATED') must NEVER overlap caption text, progress bars, or icons. Progress bars must have 40px clearance above and below them. Icon clusters must have 40px clearance from any counter or label text. If elements would collide, shrink the counter or move it to clear space — never stack them on top of each other.
 
-- CIPHERPULSE WATERMARK POSITION: The CIPHERPULSE watermark must be positioned at the absolute bottom-right of the canvas at top: 1880, left: 820. It must be the lowest element on screen. No other element may appear below y=1880.
+- CIPHERPULSE WATERMARK POSITION: The CIPHERPULSE watermark must be positioned at the BOTTOM-LEFT of the canvas at top: 1820, left: 60. Do NOT place it on the right side — YouTube's mobile UI overlays the right side and will cut it off. It must be the lowest element on screen. No other element may appear below y=1820.
 """
 
 
