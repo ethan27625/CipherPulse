@@ -150,7 +150,7 @@ exact pattern (copy it verbatim — do not substitute a plain <p> block):
   <div style={{ position: "absolute", top: 1650, left: 60, right: 60,
     display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 6 }}>
     {words.map((word, i) => (
-      <span key={i} style={{ fontSize: 22, fontWeight: 500,
+      <span key={i} style={{ fontSize: 26, fontWeight: 500,
         fontFamily: "monospace",
         color: i === currentWord ? "#00E5FF" : "rgba(255,255,255,0.9)" }}>
         {word}
@@ -160,10 +160,28 @@ exact pattern (copy it verbatim — do not substitute a plain <p> block):
 
 Rules:
   - Always at top: 1650 — never change this position
-  - Always 22px, fontWeight 500 — subtle reading aid, not a dominant visual
+  - Always 26px, fontWeight 500 — subtle reading aid, not a dominant visual
   - Active word: #00E5FF (cyan). Inactive: rgba(255,255,255,0.9)
   - No background box, no border, no glow, no drop shadow, no text outline
   - This is the ONLY caption element — no plain <p>{scene.caption}</p> anywhere
+
+━━━ MANDATORY OVERLAP PREVENTION — CHECK BEFORE FINALIZING SCENE ━━━━━━━━━━━━
+Before outputting any scene, mentally render it and verify NO element overlaps
+any other element. Specifically:
+1. Emoji icons (microphone, camera, red light, etc.) must NEVER be placed on
+   top of, inside, or partially covering a terminal/code/text container. Icons
+   go either ABOVE the terminal (y < terminal_top − 60px) or BELOW the terminal
+   (y > terminal_bottom + 60px). Never beside or overlapping.
+2. Progress bars must NEVER overlap stat counter numbers or their labels. The
+   stat counter and its label must be ABOVE the progress bar with 60px minimum
+   clearance, OR fully BELOW it with 60px clearance — never in the same y-range.
+3. If a scene has a terminal/text container AND emoji icons AND a stat counter
+   AND a progress bar, lay them out in strict vertical order with 60px gaps
+   between each section. If the canvas doesn't have enough room for all
+   elements, REMOVE the least important element rather than overlapping.
+4. After generating the scene, re-check element coordinates: for any two
+   elements A and B, their bounding boxes must not intersect. If they intersect,
+   the scene is INVALID — regenerate with elements moved apart.
 
 ━━━ LAYOUT — fill the frame, no clustering ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   - Distribute elements across the full 960px usable width
@@ -200,7 +218,7 @@ export const GeneratedSceneN: React.FC<{ scene: SceneData }> = ({ scene }) => {
 2. Nothing static for more than 15 consecutive frames (0.5 s)
 3. Elements animate IN — no instant full-opacity pop (use fade or scale)
 4. Stagger element start frames: offset each by 8–20 frames
-5. scene.caption as synced word-by-word at top:1650, fontSize:22 — always present from frame 0
+5. scene.caption as synced word-by-word at top:1650, fontSize:26 — always present from frame 0
 6. At least 3 distinct animated elements in the MIDDLE ZONE
 7. At least one spring() for a satisfying bounce on the key reveal
 
@@ -329,12 +347,12 @@ export const GeneratedSceneExample: React.FC<{ scene: SceneData }> = ({ scene })
           borderRadius: 10, boxShadow: `0 0 12px ${accent}` }} />
       </div>
 
-      {/* CAPTION — synced word-by-word at top:1650, 22px subtle */}
+      {/* CAPTION — synced word-by-word at top:1650, 26px subtle */}
       <div style={{ position: "absolute", top: 1650, left: 60, right: 60,
         display: "flex", flexWrap: "wrap", justifyContent: "center",
         gap: 6, opacity: captionOpacity }}>
         {words.map((word, i) => (
-          <span key={i} style={{ fontSize: 22, fontWeight: 500,
+          <span key={i} style={{ fontSize: 26, fontWeight: 500,
             fontFamily: "monospace",
             color: i === currentWord ? "#00E5FF" : "rgba(255,255,255,0.9)" }}>
             {word}
@@ -353,7 +371,7 @@ In JSX/TSX, SVG attributes are camelCase:
 - TypeScript strict — no `any` type
 - All data (labels, positions, colours) as const arrays BEFORE the return
 - Root element MUST use background: "#060609"
-- Caption MUST use the synced word-by-word pattern at top:1650, fontSize:22, fontWeight:500 — no exceptions
+- Caption MUST use the synced word-by-word pattern at top:1650, fontSize:26, fontWeight:500 — no exceptions
 - Minimum icon size 120px, minimum counter font 140px, minimum bar height 20px
 - Frame 0 must not be blank — start a glow or grid from frame 0
 - Keep component under 110 lines of code
@@ -369,7 +387,7 @@ In JSX/TSX, SVG attributes are camelCase:
   BOTTOM ZONE (y=1350 to y=1750): Caption/subtitle text and status labels (e.g. 'DATA LOSS', 'BREACH #1 + #2'). No icons or images in this zone.
   Never stack an emoji on top of text. If an icon grid would extend into the top or bottom text zones, shrink the icons or reduce the count to fit within the middle zone.
 - EMOJI AND ICON LAYOUT RULES: When placing multiple emojis or icons in a scene, they must be arranged in a clean grid or structured layout — never scattered randomly or piled on top of each other. Use a maximum of 4-6 icons per scene. Arrange them in a grid pattern (e.g. 2x2 or 3x2) with at least 120px spacing between each icon. Each icon should be the same size (max 80px). Icons must stay within x=60 to x=980 and y=350 to y=1100. Never let icons overlap each other or overlap any text element.
-- Caption/subtitle text MUST be fontSize:22, fontWeight:500 — subtle reading aid. Never bolder or larger.
+- Caption/subtitle text MUST be fontSize:26, fontWeight:500 — subtle reading aid. Never bolder or larger.
 - STAT COUNTER PLACEMENT RULE: When a scene has both a stat counter (large animated number like '681', '30M', '527') AND emoji/icon elements, the stat counter must be placed BELOW the icons, never overlapping them. Layout order from top to bottom should be: heading text first, then icons/emojis in the middle zone, then the stat counter number and its label below the icons in the empty space before the caption. The stat counter should be centered horizontally and positioned in the gap between the icon cluster and the bottom caption area. Never render a large number on top of or behind an emoji/icon.
 - OVERLAP PREVENTION: The stat counter number and its label (e.g. '16%' + 'DATA COMPROMISED') must end by y=1300 at the latest. The caption/subtitle text must start at y=1400 or lower. This creates a mandatory 100px gap between the stat counter area and the caption text so they never overlap. If both need to appear in the same scene, shrink the stat counter font size rather than letting them collide.
 - PROGRESS BAR PLACEMENT: Progress bars, loading bars, and horizontal status bars must be placed at y=1350 exactly, spanning from x=60 to x=820. They must NOT overlap any text above them (stat counter labels like 'TEXTS INTERCEPTED') or below them (caption text). There must be at least 60px of clear space above and below the progress bar. If a stat counter label appears above the bar, the label must end by y=1280. If caption text appears below the bar, it must start at y=1420 or lower.
@@ -383,6 +401,24 @@ In JSX/TSX, SVG attributes are camelCase:
 _EDU_EXTRA_RULES = """
 EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
 
+MANDATORY OVERLAP PREVENTION — CHECK BEFORE FINALIZING SCENE:
+Before outputting any scene, mentally render it and verify NO element overlaps
+any other element. Specifically:
+1. Emoji icons (microphone, camera, red light, etc.) must NEVER be placed on
+   top of, inside, or partially covering a terminal/code/text container. Icons
+   go either ABOVE the terminal (y < terminal_top − 60px) or BELOW the terminal
+   (y > terminal_bottom + 60px). Never beside or overlapping.
+2. Progress bars must NEVER overlap stat counter numbers or their labels. The
+   stat counter and its label must be ABOVE the progress bar with 60px minimum
+   clearance, OR fully BELOW it with 60px clearance — never in the same y-range.
+3. If a scene has a terminal/text container AND emoji icons AND a stat counter
+   AND a progress bar, lay them out in strict vertical order with 60px gaps
+   between each section. If the canvas doesn't have enough room for all
+   elements, REMOVE the least important element rather than overlapping.
+4. After generating the scene, re-check element coordinates: for any two
+   elements A and B, their bounding boxes must not intersect. If they intersect,
+   the scene is INVALID — regenerate with elements moved apart.
+
 - SYNCED WORD-BY-WORD CAPTIONS (REQUIRED — EVERY SCENE): Every scene MUST render scene.caption as a synced word-by-word reveal using this exact pattern:
 
   const words = scene.caption.split(" ");
@@ -394,7 +430,7 @@ EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
   <div style={{ position: "absolute", top: 1650, left: 60, right: 60,
     display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 6 }}>
     {words.map((word, i) => (
-      <span key={i} style={{ fontSize: 22, fontWeight: 500,
+      <span key={i} style={{ fontSize: 26, fontWeight: 500,
         fontFamily: "monospace",
         color: i === currentWord ? "#00E5FF" : "rgba(255,255,255,0.9)" }}>
         {word}
@@ -402,7 +438,7 @@ EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
     ))}
   </div>
 
-  Styling: top:1650, fontSize:22, fontWeight:500, active word #00E5FF, inactive rgba(255,255,255,0.9). No box, no border, no glow, no shadow. Subtle reading aid.
+  Styling: top:1650, fontSize:26, fontWeight:500, active word #00E5FF, inactive rgba(255,255,255,0.9). No box, no border, no glow, no shadow. Subtle reading aid.
   This is the ONLY caption element. Do NOT also add a plain <p>{scene.caption}</p> block anywhere.
 
 - NO SECONDARY DESCRIPTIVE TEXT: Do not add any secondary text labels that describe what is happening in the visuals (e.g. "Reconnaissance: casing before attack", "Social engineering finds weakest entry", or any sentence that paraphrases the scene topic). The synced word-by-word captions at top: 1650 are the only text at the bottom of the screen. Do not add any other explanation text near or overlapping the icons or visual area.
