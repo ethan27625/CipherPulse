@@ -359,8 +359,14 @@ In JSX/TSX, SVG attributes are camelCase:
 # DO NOT add these to _SYSTEM — they must not affect the news pipeline.
 _EDU_EXTRA_RULES = """
 EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
-- Caption/subtitle text at the bottom of the screen must use font-size 28px maximum. Never larger. This overrides the 32px rule above.
+
+- CAPTION FONT SIZE — EXACT OVERRIDE: Caption/subtitle text at the bottom of the screen MUST use fontSize: 28 for EVERY scene, no exceptions. This OVERRIDES the "fontSize: 52" rule stated in HARD RULES and ANIMATION REQUIREMENTS above — do NOT use 52px for captions in edu mode. Never use a larger font size for captions even on short text. All captions across all scenes in a single video must be visually identical in size: exactly 28px, every time.
+
 - COMPARISON CARD LAYOUT: When showing two side-by-side cards (e.g. TCP vs UDP), both cards must fit fully within the screen. Left card: x=60 to x=500. Right card: x=540 to x=980. Cards must never extend past x=0 on the left or x=1080 on the right. Each card max width is 440px. All text inside cards must word-wrap within the card bounds.
+
+- STRICT NO-OVERLAP ENFORCEMENT: Every element must have at least 40px of clear vertical space between it and any other element. Specifically: stat counters and their labels (like '45%' + 'PENETRATION' or '0' + 'PORTS ENUMERATED') must NEVER overlap caption text, progress bars, or icons. Progress bars must have 40px clearance above and below them. Icon clusters must have 40px clearance from any counter or label text. If elements would collide, shrink the counter or move it to clear space — never stack them on top of each other.
+
+- CIPHERPULSE WATERMARK POSITION: The CIPHERPULSE watermark must be positioned at the absolute bottom-right of the canvas at top: 1880, left: 820. It must be the lowest element on screen. No other element may appear below y=1880.
 """
 
 
