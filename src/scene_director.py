@@ -341,6 +341,7 @@ In JSX/TSX, SVG attributes are camelCase:
 - Keep all text and visual elements within x=60 to x=820 to avoid YouTube's right-side UI buttons.
 - No content above y=220 to avoid YouTube's header.
 - All text must have 100px right margin. If text is too long, reduce font size or wrap — never let text go off screen.
+- CRITICAL LAYOUT RULE FOR SIDE-BY-SIDE / COMPARISON SCENES: When a scene has two columns or two side-by-side elements (e.g. comparison cards, before/after, left vs right), the total layout must fit within x=60 to x=1020. Each column should be max 440px wide with a 40px gap between them. Left column: x=60 to x=500. Right column: x=540 to x=980. All text inside cards must word-wrap within the card bounds — never overflow past x=980. This prevents right-edge clipping on 1080px canvas.
 """
 
 
