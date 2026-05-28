@@ -347,6 +347,8 @@ In JSX/TSX, SVG attributes are camelCase:
   MIDDLE ZONE (y=350 to y=1350): Icons, emojis, images, diagrams, progress bars, and decorative elements. All icons/emojis must be contained within this zone and must not extend above into the heading or below into the caption area.
   BOTTOM ZONE (y=1350 to y=1750): Caption/subtitle text and status labels (e.g. 'DATA LOSS', 'BREACH #1 + #2'). No icons or images in this zone.
   Never stack an emoji on top of text. If an icon grid would extend into the top or bottom text zones, shrink the icons or reduce the count to fit within the middle zone.
+- EMOJI AND ICON LAYOUT RULES: When placing multiple emojis or icons in a scene, they must be arranged in a clean grid or structured layout — never scattered randomly or piled on top of each other. Use a maximum of 4-6 icons per scene. Arrange them in a grid pattern (e.g. 2x2 or 3x2) with at least 120px spacing between each icon. Each icon should be the same size (max 80px). Icons must stay within x=60 to x=980 and y=350 to y=1100. Never let icons overlap each other or overlap any text element.
+- Caption/subtitle text at the bottom must use font-size 32px maximum, never larger.
 """
 
 
