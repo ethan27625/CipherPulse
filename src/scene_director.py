@@ -342,6 +342,11 @@ In JSX/TSX, SVG attributes are camelCase:
 - No content above y=220 to avoid YouTube's header.
 - All text must have 100px right margin. If text is too long, reduce font size or wrap — never let text go off screen.
 - CRITICAL LAYOUT RULE FOR SIDE-BY-SIDE / COMPARISON SCENES: When a scene has two columns or two side-by-side elements (e.g. comparison cards, before/after, left vs right), the total layout must fit within x=60 to x=1020. Each column should be max 440px wide with a 40px gap between them. Left column: x=60 to x=500. Right column: x=540 to x=980. All text inside cards must word-wrap within the card bounds — never overflow past x=980. This prevents right-edge clipping on 1080px canvas.
+- CRITICAL Z-LAYER / OVERLAP RULE: Emoji icons, images, and decorative visual elements must NEVER overlap text labels, headings, or caption text. Enforce strict vertical zones — the canvas is divided into 3 non-overlapping bands:
+  TOP ZONE (y=80 to y=350): Large heading text (e.g. 'BREACH', 'CRITICAL', stat counters like '30M')
+  MIDDLE ZONE (y=350 to y=1350): Icons, emojis, images, diagrams, progress bars, and decorative elements. All icons/emojis must be contained within this zone and must not extend above into the heading or below into the caption area.
+  BOTTOM ZONE (y=1350 to y=1750): Caption/subtitle text and status labels (e.g. 'DATA LOSS', 'BREACH #1 + #2'). No icons or images in this zone.
+  Never stack an emoji on top of text. If an icon grid would extend into the top or bottom text zones, shrink the icons or reduce the count to fit within the middle zone.
 """
 
 
