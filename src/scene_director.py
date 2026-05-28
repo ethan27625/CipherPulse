@@ -113,7 +113,7 @@ Usable height: y=150 to y=1750 (1600px of content height)
   MIDDLE ZONE y=500  – y=1200  (700px) — main visual: icons, diagrams, bars, SVG
   BOTTOM ZONE y=1200 – y=1750  (550px) — sub-labels, progress bars, caption
 
-  CAPTION is ALWAYS in the BOTTOM ZONE at top: 1350px (see below).
+  CAPTION is ALWAYS in the BOTTOM ZONE at top: 1650px (see below).
   Elements in one zone must NOT overlap into another zone.
   Leave at least 40px gap between any two elements.
 
@@ -137,21 +137,33 @@ must be present from frame 0 so the screen is never blank.
   - Use interpolate(frame, [0, 20], ...) not [20, 40] for the first element
   - A subtle pulse or glow starting at frame 0 is always sufficient
 
-━━━ CAPTION — fixed position, every scene ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Caption text (scene.caption) MUST be rendered with EXACTLY this style:
-  position: "absolute"
-  top: 1350
-  left: 60
-  right: 60
-  textAlign: "center"
-  color: "#E8E6E3"
-  fontSize: 52
-  fontWeight: 900
-  lineHeight: 1.25
-  textShadow: "0 2px 12px rgba(0,0,0,0.9)"
-  margin: 0
+━━━ CAPTION — synced word-by-word, every scene ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every scene MUST render scene.caption as a synced word-by-word reveal. Use this
+exact pattern (copy it verbatim — do not substitute a plain <p> block):
 
-Never change top: 1350. Never use bottom: instead of top:. Never move the caption.
+  const words = scene.caption.split(" ");
+  const currentWord = Math.floor(
+    interpolate(frame, [0, totalFrames - 5], [0, words.length],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+  );
+
+  <div style={{ position: "absolute", top: 1650, left: 60, right: 60,
+    display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 6 }}>
+    {words.map((word, i) => (
+      <span key={i} style={{ fontSize: 22, fontWeight: 500,
+        fontFamily: "monospace",
+        color: i === currentWord ? "#00E5FF" : "rgba(255,255,255,0.9)" }}>
+        {word}
+      </span>
+    ))}
+  </div>
+
+Rules:
+  - Always at top: 1650 — never change this position
+  - Always 22px, fontWeight 500 — subtle reading aid, not a dominant visual
+  - Active word: #00E5FF (cyan). Inactive: rgba(255,255,255,0.9)
+  - No background box, no border, no glow, no drop shadow, no text outline
+  - This is the ONLY caption element — no plain <p>{scene.caption}</p> anywhere
 
 ━━━ LAYOUT — fill the frame, no clustering ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   - Distribute elements across the full 960px usable width
@@ -178,7 +190,7 @@ export const GeneratedSceneN: React.FC<{ scene: SceneData }> = ({ scene }) => {
     <AbsoluteFill style={{ background: "#060609", overflow: "hidden", fontFamily: "monospace" }}>
       {/* TOP ZONE: title or counter (y=150-500) */}
       {/* MIDDLE ZONE: main visual (y=500-1200) */}
-      {/* BOTTOM ZONE: caption at top:1350 (y=1200-1750) */}
+      {/* BOTTOM ZONE: caption at top:1650 (y=1200-1750) */}
     </AbsoluteFill>
   );
 };
@@ -188,7 +200,7 @@ export const GeneratedSceneN: React.FC<{ scene: SceneData }> = ({ scene }) => {
 2. Nothing static for more than 15 consecutive frames (0.5 s)
 3. Elements animate IN — no instant full-opacity pop (use fade or scale)
 4. Stagger element start frames: offset each by 8–20 frames
-5. scene.caption at top:1350, fontSize:52 — always present from ~frame 20
+5. scene.caption as synced word-by-word at top:1650, fontSize:22 — always present from frame 0
 6. At least 3 distinct animated elements in the MIDDLE ZONE
 7. At least one spring() for a satisfying bounce on the key reveal
 
@@ -268,11 +280,16 @@ export const GeneratedSceneExample: React.FC<{ scene: SceneData }> = ({ scene })
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
   );
 
-  // Progress bar in BOTTOM ZONE (y≈1260, well above caption at 1350)
+  // Progress bar in BOTTOM ZONE (y≈1260, well above caption at 1650)
   const pct = interpolate(frame, [0, totalFrames - 10], [0, 100],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  // Caption fade from frame 0
+  // Synced caption: word-by-word reveal across scene duration
+  const words = scene.caption.split(" ");
+  const currentWord = Math.floor(
+    interpolate(frame, [0, totalFrames - 5], [0, words.length],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+  );
   const captionOpacity = interpolate(frame, [0, 20], [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
@@ -312,13 +329,17 @@ export const GeneratedSceneExample: React.FC<{ scene: SceneData }> = ({ scene })
           borderRadius: 10, boxShadow: `0 0 12px ${accent}` }} />
       </div>
 
-      {/* CAPTION — fixed at top:1350, never changes */}
-      <div style={{ position: "absolute", top: 1350, left: 60, right: 60,
-        textAlign: "center", opacity: captionOpacity }}>
-        <p style={{ color: "#E8E6E3", fontSize: 52, fontWeight: 900,
-          lineHeight: 1.25, textShadow: "0 2px 12px rgba(0,0,0,0.9)", margin: 0 }}>
-          {scene.caption}
-        </p>
+      {/* CAPTION — synced word-by-word at top:1650, 22px subtle */}
+      <div style={{ position: "absolute", top: 1650, left: 60, right: 60,
+        display: "flex", flexWrap: "wrap", justifyContent: "center",
+        gap: 6, opacity: captionOpacity }}>
+        {words.map((word, i) => (
+          <span key={i} style={{ fontSize: 22, fontWeight: 500,
+            fontFamily: "monospace",
+            color: i === currentWord ? "#00E5FF" : "rgba(255,255,255,0.9)" }}>
+            {word}
+          </span>
+        ))}
       </div>
     </AbsoluteFill>
   );
@@ -332,7 +353,7 @@ In JSX/TSX, SVG attributes are camelCase:
 - TypeScript strict — no `any` type
 - All data (labels, positions, colours) as const arrays BEFORE the return
 - Root element MUST use background: "#060609"
-- Caption MUST be at top:1350, fontSize:52, textShadow as shown — no exceptions
+- Caption MUST use the synced word-by-word pattern at top:1650, fontSize:22, fontWeight:500 — no exceptions
 - Minimum icon size 120px, minimum counter font 140px, minimum bar height 20px
 - Frame 0 must not be blank — start a glow or grid from frame 0
 - Keep component under 110 lines of code
@@ -348,11 +369,13 @@ In JSX/TSX, SVG attributes are camelCase:
   BOTTOM ZONE (y=1350 to y=1750): Caption/subtitle text and status labels (e.g. 'DATA LOSS', 'BREACH #1 + #2'). No icons or images in this zone.
   Never stack an emoji on top of text. If an icon grid would extend into the top or bottom text zones, shrink the icons or reduce the count to fit within the middle zone.
 - EMOJI AND ICON LAYOUT RULES: When placing multiple emojis or icons in a scene, they must be arranged in a clean grid or structured layout — never scattered randomly or piled on top of each other. Use a maximum of 4-6 icons per scene. Arrange them in a grid pattern (e.g. 2x2 or 3x2) with at least 120px spacing between each icon. Each icon should be the same size (max 80px). Icons must stay within x=60 to x=980 and y=350 to y=1100. Never let icons overlap each other or overlap any text element.
-- Caption/subtitle text at the bottom must use font-size 32px maximum, never larger.
+- Caption/subtitle text MUST be fontSize:22, fontWeight:500 — subtle reading aid. Never bolder or larger.
 - STAT COUNTER PLACEMENT RULE: When a scene has both a stat counter (large animated number like '681', '30M', '527') AND emoji/icon elements, the stat counter must be placed BELOW the icons, never overlapping them. Layout order from top to bottom should be: heading text first, then icons/emojis in the middle zone, then the stat counter number and its label below the icons in the empty space before the caption. The stat counter should be centered horizontally and positioned in the gap between the icon cluster and the bottom caption area. Never render a large number on top of or behind an emoji/icon.
 - OVERLAP PREVENTION: The stat counter number and its label (e.g. '16%' + 'DATA COMPROMISED') must end by y=1300 at the latest. The caption/subtitle text must start at y=1400 or lower. This creates a mandatory 100px gap between the stat counter area and the caption text so they never overlap. If both need to appear in the same scene, shrink the stat counter font size rather than letting them collide.
 - PROGRESS BAR PLACEMENT: Progress bars, loading bars, and horizontal status bars must be placed at y=1350 exactly, spanning from x=60 to x=820. They must NOT overlap any text above them (stat counter labels like 'TEXTS INTERCEPTED') or below them (caption text). There must be at least 60px of clear space above and below the progress bar. If a stat counter label appears above the bar, the label must end by y=1280. If caption text appears below the bar, it must start at y=1420 or lower.
 - ICONS MUST NEVER COVER TEXT BOXES: When a scene contains a text container (terminal window, code block, card, or any box with readable text), emoji icons must be placed OUTSIDE that container — either fully above it, fully below it, or to the sides with clear separation. Icons must never be positioned on top of, overlapping, or partially covering any text container or its contents. If there is not enough room to place icons without overlapping a text box, reduce the number of icons or omit them entirely.
+- CIPHERPULSE WATERMARK POSITION: The CIPHERPULSE watermark must be positioned at the BOTTOM-LEFT of the canvas at top: 1820, left: 60. Do NOT place it on the right side — YouTube's mobile UI overlays the right side. It must be the lowest element on screen.
+- NO SECONDARY DESCRIPTIVE TEXT: Do not add any secondary text labels that describe what is happening in the visuals. The synced word-by-word captions at top: 1650 are the only caption text. Do not add any other explanation text overlapping or above the icons/visuals.
 """
 
 # ── Edu-mode extra rules (appended to _SYSTEM only for --mode edu) ─────────────
@@ -360,7 +383,7 @@ In JSX/TSX, SVG attributes are camelCase:
 _EDU_EXTRA_RULES = """
 EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
 
-- SYNCED WORD-BY-WORD CAPTIONS (REQUIRED — EVERY SCENE): Every edu scene MUST render scene.caption as an animated word-by-word reveal. This OVERRIDES the "fontSize: 52" and "top: 1350" caption rules from HARD RULES above. Use this exact pattern:
+- SYNCED WORD-BY-WORD CAPTIONS (REQUIRED — EVERY SCENE): Every scene MUST render scene.caption as a synced word-by-word reveal using this exact pattern:
 
   const words = scene.caption.split(" ");
   const currentWord = Math.floor(
@@ -368,16 +391,21 @@ EDU MODE OVERRIDES (these take precedence over any conflicting rule above):
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
   );
 
-  Render at top: 1500, left: 60, right: 60 as a flex row:
-  <div style={{ position: "absolute", top: 1500, left: 60, right: 60, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+  <div style={{ position: "absolute", top: 1650, left: 60, right: 60,
+    display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 6 }}>
     {words.map((word, i) => (
-      <span key={i} style={{ fontSize: 32, fontWeight: 900, fontFamily: "monospace", color: i === currentWord ? accent : "#E8E6E3", textShadow: "0 2px 8px rgba(0,0,0,0.9)" }}>{word}</span>
+      <span key={i} style={{ fontSize: 22, fontWeight: 500,
+        fontFamily: "monospace",
+        color: i === currentWord ? "#00E5FF" : "rgba(255,255,255,0.9)" }}>
+        {word}
+      </span>
     ))}
   </div>
 
+  Styling: top:1650, fontSize:22, fontWeight:500, active word #00E5FF, inactive rgba(255,255,255,0.9). No box, no border, no glow, no shadow. Subtle reading aid.
   This is the ONLY caption element. Do NOT also add a plain <p>{scene.caption}</p> block anywhere.
 
-- NO SECONDARY DESCRIPTIVE TEXT: Do not add any secondary text labels that describe what is happening in the visuals (e.g. "Reconnaissance: casing before attack", "Social engineering finds weakest entry", or any sentence that paraphrases the scene topic). The synced word-by-word captions at top: 1500 are the only text at the bottom of the screen. Do not add any other explanation text near or overlapping the icons or visual area.
+- NO SECONDARY DESCRIPTIVE TEXT: Do not add any secondary text labels that describe what is happening in the visuals (e.g. "Reconnaissance: casing before attack", "Social engineering finds weakest entry", or any sentence that paraphrases the scene topic). The synced word-by-word captions at top: 1650 are the only text at the bottom of the screen. Do not add any other explanation text near or overlapping the icons or visual area.
 
 - COMPARISON CARD LAYOUT: When showing two side-by-side cards (e.g. TCP vs UDP), both cards must fit fully within the screen. Left card: x=60 to x=500. Right card: x=540 to x=980. Cards must never extend past x=0 on the left or x=1080 on the right. Each card max width is 440px. All text inside cards must word-wrap within the card bounds.
 
