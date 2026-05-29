@@ -38,27 +38,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Python setup ───────────────────────────────────────────────────────
+      # ── 2. Node.js setup (required for Remotion rendering) ───────────────────
+      # Remotion's CLI (npx remotion render) and TypeScript compilation both
+      # require Node.js. Caches node_modules keyed on remotion-video/package-lock.json.
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      # ── 3. Python setup ───────────────────────────────────────────────────────
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
 
-      # ── 3. System dependencies ────────────────────────────────────────────────
+      # ── 4. System dependencies ────────────────────────────────────────────────
+      # xvfb: remotion_generator.py wraps the render in xvfb-run on Linux headless
+      # if it's present, which avoids DISPLAY-related Chrome crashes.
       - name: Install system dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             ffmpeg \
             libass9 \
-            fonts-liberation
+            fonts-liberation \
+            xvfb
 
-      # ── 4. Python dependencies ────────────────────────────────────────────────
+      # ── 5. Python dependencies ────────────────────────────────────────────────
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      # ── 5. Cache Pexels footage clips ────────────────────────────────────────
+      # ── 6. Install Remotion / TypeScript packages ─────────────────────────────
+      # package-lock.json exists so npm ci is used (faster, reproducible).
+      # Installs remotion 4.0.468, @remotion/cli, react, typescript, and type stubs.
+      # Must run before "Install Remotion browser" so the remotion CLI is present.
+      - name: Install Remotion/TypeScript packages
+        working-directory: remotion-video
+        run: npm ci
+
+      # ── 7. Cache Pexels footage clips ────────────────────────────────────────
       # footage_cache is gitignored — runners start cold. Restoring a cache of
       # previously downloaded clips cuts Stage 5 from ~5 min to ~30s.
       # Cache key rotates weekly so stale clips don't accumulate forever.
@@ -70,9 +91,9 @@ jobs:
           restore-keys: |
             footage-${{ runner.os }}-
 
-      # ── 7. Restore OAuth tokens ───────────────────────────────────────────────
+      # ── 8. Restore OAuth tokens ───────────────────────────────────────────────
       # Token is base64-encoded and stored as a secret so it survives across runs.
-      # IMPORTANT: Step 9 (Persist refreshed token) saves the post-refresh token
+      # IMPORTANT: Step 12 (Persist refreshed token) saves the post-refresh token
       # back to YOUTUBE_TOKEN_B64 after every successful run — this prevents the
       # secret from going stale when Google rotates credentials.
       - name: Restore OAuth tokens
@@ -85,7 +106,20 @@ jobs:
             echo "WARNING: YOUTUBE_TOKEN_B64 secret not set — uploads will fail"
           fi
 
-      # ── 8. Download background music (SoundHelix, no API key required) ────────
+      # ── 9. Install Remotion browser (Chromium) ────────────────────────────────
+      # Uses Remotion's managed Chromium so the browser version is guaranteed
+      # compatible with remotion 4.0.468. After ensure, get-executable-path prints
+      # the absolute path which is exported as CHROMIUM_PATH. remotion_generator.py
+      # reads os.environ.get("CHROMIUM_PATH") as its first candidate in _find_chromium().
+      - name: Install Remotion browser
+        working-directory: remotion-video
+        run: |
+          npx remotion browser ensure
+          CHROMIUM_PATH=$(npx remotion browser get-executable-path)
+          echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> $GITHUB_ENV
+          echo "Chromium installed at: $CHROMIUM_PATH"
+
+      # ── 10. Download background music (SoundHelix, no API key required) ───────
       # assets/music/ is gitignored so runners start with no music files.
       # This step downloads CC0 dark/ambient tracks so every video has real music.
       # Falls back gracefully to sine-wave drone if this step fails.
@@ -97,15 +131,19 @@ jobs:
           python3 -m src.download_safe_music --source soundhelix
           echo "Music download complete"
 
-      # ── 9. Run pipeline ───────────────────────────────────────────────────────
+      # ── 11. Run pipeline ──────────────────────────────────────────────────────
       # Mode routing for cron triggers: match on github.event.schedule (the exact
       # cron string that fired). For workflow_dispatch, use the mode input.
+      # VISUAL_ENGINE=remotion: tells orchestrator to use the Remotion render path
+      # instead of falling back to the Pexels/FFmpeg engine.
+      # CHROMIUM_PATH is already set in $GITHUB_ENV by step 9 above.
       - name: Run CipherPulse pipeline
         env:
           ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
           PEXELS_API_KEY:        ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_CLIENT_ID:     ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          VISUAL_ENGINE:         remotion
         run: |
           COUNT="${{ github.event.inputs.count || '1' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
@@ -128,7 +166,7 @@ jobs:
           echo "Schedule: '$SCHEDULE' → mode=$MODE count=$COUNT dry_run=$DRY_RUN"
           python3 -m src.orchestrator $ARGS
 
-      # ── 10. Persist refreshed OAuth token back to secret ─────────────────────
+      # ── 12. Persist refreshed OAuth token back to secret ─────────────────────
       # After each run the youtube_uploader auto-refreshes config/token.json.
       # This step saves the refreshed token back to YOUTUBE_TOKEN_B64 so the
       # next cron run starts with valid credentials.
@@ -154,7 +192,7 @@ jobs:
             echo "SKIPPED: GH_PAT secret not configured — see step comment for setup instructions"
           fi
 
-      # ── 11. Upload video artifacts ────────────────────────────────────────────
+      # ── 13. Upload video artifacts ────────────────────────────────────────────
       - name: Upload generated Shorts
         if: always()
         uses: actions/upload-artifact@v4
@@ -167,7 +205,7 @@ jobs:
             output/*/metadata.json
           retention-days: 7
 
-      # ── 12. Upload run log ────────────────────────────────────────────────────
+      # ── 14. Upload run log ────────────────────────────────────────────────────
       - name: Upload run log
         if: always()
         uses: actions/upload-artifact@v4
