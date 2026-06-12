@@ -114,8 +114,12 @@ jobs:
       - name: Install Remotion browser
         working-directory: remotion-video
         run: |
-          npx remotion browser ensure
-          CHROMIUM_PATH=$(node -e "const {getRevisionInfo}=require('@remotion/renderer/dist/browser/BrowserFetcher');console.log(getRevisionInfo('headless-shell').executablePath)")
+          ENSURE_OUT=$(npx remotion browser ensure 2>&1)
+          echo "$ENSURE_OUT"
+          CHROMIUM_PATH=$(echo "$ENSURE_OUT" | grep "Has browser at" | sed 's/.*Has browser at //')
+          if [ -z "$CHROMIUM_PATH" ]; then
+            CHROMIUM_PATH=$(find node_modules/.remotion/chrome-headless-shell -name "chrome-headless-shell" -not -name "*.zip" -type f 2>/dev/null | head -1)
+          fi
           echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> $GITHUB_ENV
           echo "Chromium installed at: $CHROMIUM_PATH"
 
