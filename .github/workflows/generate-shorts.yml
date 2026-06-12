@@ -115,7 +115,7 @@ jobs:
         working-directory: remotion-video
         run: |
           npx remotion browser ensure
-          CHROMIUM_PATH=$(npx remotion browser get-executable-path)
+          CHROMIUM_PATH=$(node -e "const {getRevisionInfo}=require('@remotion/renderer/dist/browser/BrowserFetcher');console.log(getRevisionInfo('headless-shell').executablePath)")
           echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> $GITHUB_ENV
           echo "Chromium installed at: $CHROMIUM_PATH"
 
