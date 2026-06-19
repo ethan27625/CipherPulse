@@ -49,7 +49,7 @@ logging.basicConfig(
 log = logging.getLogger("script_writer")
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 1024
 WORDS_PER_MINUTE = 100      # Conservative floor calibrated from AndrewMultilingualNeural at rate=-5%
 MAX_DURATION_SECONDS = 55   # News target ceiling — 45-55s is the sweet spot for Shorts

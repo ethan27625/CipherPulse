@@ -66,7 +66,7 @@ logging.basicConfig(
 log = logging.getLogger("seo_generator")
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 1200
 RESOURCE_EXTRACTION_MODEL = "claude-sonnet-4-5"  # Model for edu tool/resource extraction
 MAX_RESOURCES = 6            # Cap on entries in the Tools & Resources section
