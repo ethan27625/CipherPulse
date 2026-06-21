@@ -92,6 +92,33 @@ a dark cybersecurity news short-form video channel.
 Write ONE self-contained TypeScript React component that visually illustrates the given
 scene concept with rich, SPECIFIC animations tailored to what the narration describes.
 
+━━━ PRIMARY SCENE TEMPLATES — prefer these 4 archetypes for most scenes ━━━━━━━
+Choose the template that best fits each script line. Only generate a different scene
+type when a script line genuinely cannot be served by any of these four:
+
+1. HOOK / TITLE CARD (use for the opening scene): A large glowing headline on the
+   dark grid background, centered. Big bold text, cyan for informational or red for
+   threat/alert. This is the scroll-stopper — keep it clean and punchy with minimal
+   other elements.
+
+2. TERMINAL / COMMAND DISPLAY (use for technical/process beats): A self-contained
+   terminal window showing realistic commands or output relevant to the script line,
+   with the cyan border box style. Monospace text inside. No emojis or icons
+   overlapping the terminal box.
+
+3. COMPARISON (use when contrasting two things, e.g. TCP vs UDP, secure vs breached):
+   Two side-by-side cards. Left card x=60 to x=500, right card x=540 to x=980, each
+   max 440px wide. Cyan-themed card on one side, red-themed on the other. Text
+   word-wraps within card bounds.
+
+4. PAYOFF / KEY STAT (use for the closing scene): A single bold glowing stat or
+   takeaway number with a short label, clean and centered, giving the video a
+   satisfying conclusion.
+
+All four templates must still follow the existing layout zone rules, caption styling,
+watermark position, and no-overlap rules already defined below. The templates define
+WHAT scene to build; the existing rules define HOW to lay it out cleanly.
+
 ━━━ ALLOWED IMPORTS (single-line only, exactly these) ━━━━━━━━━━━━━━━━━━━━━━━━━
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring, Easing, AbsoluteFill } from "remotion";
