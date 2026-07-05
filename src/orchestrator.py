@@ -261,6 +261,30 @@ def run_pipeline(
                         "Regenerate with a shorter script."
                     )
 
+            # ── Retime Remotion scenes to the MEASURED voiceover duration ──────
+            # script.scenes were sized to script_writer's ESTIMATED duration
+            # (WORDS_PER_MINUTE=100), which runs ~30% long versus the real
+            # Edge-TTS audio. Rescale each scene proportionally to the measured
+            # voiceover length so the rendered video matches the audio —
+            # otherwise assemble_remotion_audio's -t truncation cuts off the
+            # final PAYOFF/CTA scene. Caption interpolation inherits the
+            # corrected durations automatically (totalFrames derives from
+            # scene.duration_seconds). Reuses the normalization pattern from
+            # script_writer._generate_scenes, targeting the measured duration.
+            if VISUAL_ENGINE == "remotion" and script.scenes:
+                measured  = voice.duration_seconds
+                estimated = sum(s.duration_seconds for s in script.scenes)
+                if estimated > 0 and abs(estimated - measured) > 0.5:
+                    factor = measured / estimated
+                    for s in script.scenes:
+                        s.duration_seconds = round(s.duration_seconds * factor, 2)
+                    log.info(
+                        f"  Retimed {len(script.scenes)} scenes: "
+                        f"{estimated:.1f}s (est) → "
+                        f"{sum(s.duration_seconds for s in script.scenes):.1f}s "
+                        f"(measured audio {measured:.1f}s)"
+                    )
+
         # ── Stage 5: Footage / Remotion scenes ────────────────────────────────
         if is_text_card:
             log.info("Stage 5/12 — Downloading text card image clip…")
