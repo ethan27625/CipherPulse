@@ -19,7 +19,8 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-TOPICS_PATH = Path("topics.json")
+TOPICS_PATH   = Path("topics.json")
+RUN_LOG_PATH  = Path("output/run_log.json")
 
 # 30% of picks are overridden to format 7 (Text Card) for content variety.
 # This mixes quick text card Shorts with the standard voiceover Shorts
@@ -36,6 +37,26 @@ TREND_KEYWORDS = [
     "zero day", "malware",
 ]
 TREND_WEIGHT_MULTIPLIER = 3  # matching topics get 3× the base weight
+
+
+def _last_news_format() -> int | None:
+    """Return the format ID of the most recent successful news run, or None.
+
+    Reads run_log.json backwards to find the last entry where topic.format is
+    an integer (edu runs store topic.mode='edu' with no format key). Returns
+    None if the log is absent, unreadable, or contains no news runs yet.
+    """
+    if not RUN_LOG_PATH.exists():
+        return None
+    try:
+        entries = json.loads(RUN_LOG_PATH.read_text())
+        for entry in reversed(entries):
+            fmt = entry.get("topic", {}).get("format")
+            if isinstance(fmt, int):
+                return fmt
+    except Exception:
+        pass
+    return None
 
 
 @dataclass
@@ -95,8 +116,29 @@ def pick_topic(random_pick: bool = False) -> Topic:
         )
         chosen_data = random.choices(unused, weights=weights, k=1)[0]
     else:
-        # Lowest id first — deterministic ordering (used by cron/GitHub Actions)
-        chosen_data = min(unused, key=lambda t: t["id"])
+        # Format-aware lowest-id-first: skip topics whose format matches the
+        # immediately previous news run to prevent long monotone format runs
+        # (e.g. 14 consecutive "How X Works" F4 entries).
+        # Falls back to plain lowest-id if all remaining topics share that format.
+        last_fmt = _last_news_format()
+        if last_fmt is not None:
+            different_fmt = [t for t in unused if t["format"] != last_fmt]
+            if different_fmt:
+                chosen_data = min(different_fmt, key=lambda t: t["id"])
+                log.debug(
+                    f"Format-aware pick: skipping F{last_fmt} (last used) "
+                    f"→ selected F{chosen_data['format']} from "
+                    f"{len(different_fmt)} alternatives"
+                )
+            else:
+                # All remaining topics share the last format — no choice
+                chosen_data = min(unused, key=lambda t: t["id"])
+                log.debug(
+                    f"Format-aware pick: all {len(unused)} remaining topics are "
+                    f"F{last_fmt} — falling back to lowest-id"
+                )
+        else:
+            chosen_data = min(unused, key=lambda t: t["id"])
 
     # Mark as used
     for t in all_topics:
