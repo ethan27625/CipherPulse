@@ -130,15 +130,15 @@ DO NOT use: Math.random() — it re-runs every frame and causes flickering.
   Instead, define randomised positions as a const array BEFORE the return statement:
     const POS = [{ x: 200, y: 400 }, { x: 700, y: 900 }, ...];
 
-━━━ CANVAS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━ CANVAS & ZONES — single canonical layout (all rules below reference these) ━
 1080 × 1920 px | 30 fps | portrait 9:16
-Usable width:  60px margin each side → 960px of content width
-Usable height: y=150 to y=1750 (1600px of content height)
+Usable width:  x=60 to x=980 (920px — 60px left margin, 100px right margin)
+Usable height: y=80  to y=1900 (1820px)
 
-━━━ FRAME ZONES — place elements strictly within these bands ━━━━━━━━━━━━━━━━━━
-  TOP ZONE    y=150  – y=500   (350px) — title, keyword, counter number
-  MIDDLE ZONE y=500  – y=1200  (700px) — main visual: icons, diagrams, bars, SVG
-  BOTTOM ZONE y=1200 – y=1750  (550px) — sub-labels, progress bars, caption
+  TOP ZONE    y=80   – y=350  (270px)  — heading text, counter numbers, hook titles
+  MIDDLE ZONE y=350  – y=1350 (1000px) — icons, emojis, diagrams, SVG, decorative
+  BOTTOM ZONE y=1350 – y=1900 (550px)  — progress bars (y≈1450), status labels,
+                                          caption (y=1650), watermark (y=1820)
 
   CAPTION is ALWAYS in the BOTTOM ZONE at top: 1650px (see below).
   Elements in one zone must NOT overlap into another zone.
@@ -155,7 +155,7 @@ This is a phone screen viewed while scrolling — every element must hit immedia
   Terminal / code text:               at least 40px font size
 
 Visual content must fill at least 60% of the 1080×1920 frame. The MIDDLE ZONE
-(700px tall, 960px wide) should be densely filled — no large empty black voids.
+(1000px tall, 920px wide) should be densely filled — no large empty black voids.
 
 ━━━ OPENING FRAME — no empty starts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Frame 0 must show visible animated content. Do NOT wait until frame 10 or 20 to
@@ -233,9 +233,9 @@ export const GeneratedSceneN: React.FC<{ scene: SceneData }> = ({ scene }) => {
   // ...
   return (
     <AbsoluteFill style={{ background: "#060609", overflow: "hidden", fontFamily: "monospace" }}>
-      {/* TOP ZONE: title or counter (y=150-500) */}
-      {/* MIDDLE ZONE: main visual (y=500-1200) */}
-      {/* BOTTOM ZONE: caption at top:1650 (y=1200-1750) */}
+      {/* TOP ZONE: title or counter (y=80-350) */}
+      {/* MIDDLE ZONE: main visual (y=350-1350) */}
+      {/* BOTTOM ZONE: progress bars, caption y=1650, watermark y=1820 (y=1350-1900) */}
     </AbsoluteFill>
   );
 };
@@ -404,20 +404,16 @@ In JSX/TSX, SVG attributes are camelCase:
 - Keep component under 110 lines of code
 - Always close every JSX element you open — including </AbsoluteFill>
 - Output ONLY the TypeScript code — no markdown fences, no prose
-- Keep all text and visual elements within x=60 to x=820 to avoid YouTube's right-side UI buttons.
-- No content above y=220 to avoid YouTube's header.
-- All text must have 100px right margin. If text is too long, reduce font size or wrap — never let text go off screen.
-- CRITICAL LAYOUT RULE FOR SIDE-BY-SIDE / COMPARISON SCENES: When a scene has two columns or two side-by-side elements (e.g. comparison cards, before/after, left vs right), the total layout must fit within x=60 to x=1020. Each column should be max 440px wide with a 40px gap between them. Left column: x=60 to x=500. Right column: x=540 to x=980. All text inside cards must word-wrap within the card bounds — never overflow past x=980. This prevents right-edge clipping on 1080px canvas.
-- CRITICAL Z-LAYER / OVERLAP RULE: Emoji icons, images, and decorative visual elements must NEVER overlap text labels, headings, or caption text. Enforce strict vertical zones — the canvas is divided into 3 non-overlapping bands:
-  TOP ZONE (y=80 to y=350): Large heading text (e.g. 'BREACH', 'CRITICAL', stat counters like '30M')
-  MIDDLE ZONE (y=350 to y=1350): Icons, emojis, images, diagrams, progress bars, and decorative elements. All icons/emojis must be contained within this zone and must not extend above into the heading or below into the caption area.
-  BOTTOM ZONE (y=1350 to y=1750): Caption/subtitle text and status labels (e.g. 'DATA LOSS', 'BREACH #1 + #2'). No icons or images in this zone.
-  Never stack an emoji on top of text. If an icon grid would extend into the top or bottom text zones, shrink the icons or reduce the count to fit within the middle zone.
+- Keep all text and visual elements within x=60 to x=980 (usable width — see CANVAS & ZONES above).
+- No content above y=80 (top of TOP ZONE) or below y=1900 (bottom of BOTTOM ZONE).
+- All text must word-wrap within its container. If text is too long, reduce font size or wrap — never let text go off screen.
+- COMPARISON SCENES: Two side-by-side columns must fit within x=60 to x=980. Each column max 440px wide with 40px gap. Left column: x=60 to x=500. Right column: x=540 to x=980. All text inside cards must word-wrap within the card bounds — never overflow past x=980.
+- ZONE ENFORCEMENT: Strictly respect the TOP / MIDDLE / BOTTOM zone boundaries defined in CANVAS & ZONES above. Heading text and counters belong in TOP ZONE (y=80–350). Icons, emojis, diagrams, and decorative elements belong in MIDDLE ZONE (y=350–1350). Progress bars, status labels, caption, and watermark belong in BOTTOM ZONE (y=1350–1900). Never stack an emoji on top of text or let any element cross a zone boundary. If an icon grid would extend into TOP or BOTTOM zones, shrink icons or reduce count to fit within MIDDLE.
 - EMOJI AND ICON LAYOUT RULES: When placing multiple emojis or icons in a scene, they must be arranged in a clean grid or structured layout — never scattered randomly or piled on top of each other. Use a maximum of 4-6 icons per scene. Arrange them in a grid pattern (e.g. 2x2 or 3x2) with at least 120px spacing between each icon. Each icon should be the same size (max 80px). Icons must stay within x=60 to x=980 and y=350 to y=1100. Never let icons overlap each other or overlap any text element.
 - Caption/subtitle text MUST be fontSize:26, fontWeight:500 — subtle reading aid. Never bolder or larger.
 - STAT COUNTER PLACEMENT RULE: When a scene has both a stat counter (large animated number like '681', '30M', '527') AND emoji/icon elements, the stat counter must be placed BELOW the icons, never overlapping them. Layout order from top to bottom should be: heading text first, then icons/emojis in the middle zone, then the stat counter number and its label below the icons in the empty space before the caption. The stat counter should be centered horizontally and positioned in the gap between the icon cluster and the bottom caption area. Never render a large number on top of or behind an emoji/icon.
 - OVERLAP PREVENTION: The stat counter number and its label (e.g. '16%' + 'DATA COMPROMISED') must end by y=1300 at the latest. The caption/subtitle text must start at y=1400 or lower. This creates a mandatory 100px gap between the stat counter area and the caption text so they never overlap. If both need to appear in the same scene, shrink the stat counter font size rather than letting them collide.
-- PROGRESS BAR PLACEMENT: Progress bars, loading bars, and horizontal status bars must be placed at y=1450 exactly, spanning from x=60 to x=820. This gives more vertical clearance above the bar so stat counters and labels do not crowd it. Maintain 60px minimum clearance above and below the bar.
+- PROGRESS BAR PLACEMENT: Progress bars, loading bars, and horizontal status bars must be placed at y=1450 exactly, spanning from x=60 to x=980. This gives more vertical clearance above the bar so stat counters and labels do not crowd it. Maintain 60px minimum clearance above and below the bar.
 - ICONS MUST NEVER COVER TEXT BOXES: When a scene contains a text container (terminal window, code block, card, or any box with readable text), emoji icons must be placed OUTSIDE that container — either fully above it, fully below it, or to the sides with clear separation. Icons must never be positioned on top of, overlapping, or partially covering any text container or its contents. If there is not enough room to place icons without overlapping a text box, reduce the number of icons or omit them entirely.
 - CIPHERPULSE WATERMARK POSITION: The CIPHERPULSE watermark must be positioned at the BOTTOM-LEFT of the canvas at top: 1820, left: 60. Do NOT place it on the right side — YouTube's mobile UI overlays the right side. It must be the lowest element on screen.
 - NO SECONDARY DESCRIPTIVE TEXT: Do not add any secondary text labels that describe what is happening in the visuals. The synced word-by-word captions at top: 1650 are the only caption text. Do not add any other explanation text overlapping or above the icons/visuals.
@@ -486,6 +482,7 @@ def generate_custom_scenes(
     title: str,
     api_key: Optional[str] = None,
     mode: str = "news",
+    hook: str = "",
 ) -> None:
     """Generate custom Remotion TSX components for each scene.
 
@@ -504,6 +501,8 @@ def generate_custom_scenes(
         api_key:     ANTHROPIC_API_KEY override (defaults to env var).
         mode:        "news" (default) or "edu". Edu mode appends extra layout
                      overrides (28px caption cap, comparison card bounds).
+        hook:        Crafted hook line from script_writer (used verbatim as the
+                     headline text in scene 0). Other scenes are unaffected.
     """
     resolved_key = api_key or os.getenv("ANTHROPIC_API_KEY")
     if not resolved_key:
@@ -521,7 +520,8 @@ def generate_custom_scenes(
         caption  = scene.get("caption", "")
         log.info("[scene_director] Scene %d/%d → %r", i + 1, len(scenes), caption[:60])
         try:
-            tsx = _generate_component(client, scene, i, script_text, title, mode=mode)
+            tsx = _generate_component(client, scene, i, script_text, title, mode=mode,
+                                      hook=hook if i == 0 else "")
             valid, reason = _sanity_check(tsx, i)
             if not valid:
                 log.warning("[scene_director] Scene %d sanity check failed (%s) — template fallback", i, reason)
@@ -568,6 +568,7 @@ def _generate_component(
     script_text: str,
     title: str,
     mode: str = "news",
+    hook: str = "",
 ) -> str:
     """Call Haiku and return the raw TSX component code for one scene."""
     duration     = float(scene.get("duration_seconds", 5))
@@ -580,12 +581,21 @@ def _generate_component(
 
     kw_line = f'Keyword to feature as large dramatic text: "{keyword}"' if keyword else ""
 
+    # Scene 0 gets the verbatim hook as the dominant headline text so viewers
+    # see the crafted scroll-stopper rather than Haiku's condensed caption paraphrase.
+    hook_instruction = (
+        f'\nOPENING HOOK — render this exact text as the large glowing headline in the TOP ZONE:\n'
+        f'  "{hook}"\n'
+        f'Display it verbatim — do not paraphrase or shorten it. It is the scroll-stopper.\n'
+        f'Keep other visual elements minimal so the hook text is the dominant message.\n'
+    ) if hook else ""
+
     user_msg = f"""SCENE REQUEST
 
 Scene index:     {index}
 Export name:     GeneratedScene{index}
 Caption (exact text that must appear on screen): "{caption}"
-{kw_line}
+{kw_line}{hook_instruction}
 Scene type hint: {scene_type}
 Accent color:    {accent}
 Duration:        {duration:.1f}s = {total_frames} frames at 30 fps
