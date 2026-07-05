@@ -312,6 +312,7 @@ def run_pipeline(
                 title=script.title,
                 api_key=os.getenv("ANTHROPIC_API_KEY"),
                 mode=mode,
+                hook=script.hook,
             )
 
         else:
